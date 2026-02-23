@@ -1,0 +1,134 @@
+<resources>
+    <string name="app_name">Minima Wallet</string>
+    
+    <!-- Tab Titles -->
+    <string name="tab_wallet">Кошелёк</string>
+    <string name="tab_send">Отправить</string>
+    <string name="tab_settings">Настройки</string>
+    
+    <!-- Common -->
+    <string name="generate">Сгенерировать</string>
+    <string name="send">Отправить</string>
+    <string name="save">Сохранить</string>
+    <string name="cancel">Отмена</string>
+    <string name="ok">OK</string>
+    <string name="error">Ошибка</string>
+    <string name="success">Успешно</string>
+    <string name="yes">Да</string>
+    
+    <!-- Wallet Tab -->
+    <string name="wallet_title">Мой Кошелёк</string>
+    <string name="seed_phrase">Seed фраза</string>
+    <string name="seed_phrase_hint">Введите seed фразу или сгенерируйте новую</string>
+    <string name="generate_seed_phrase">Сгенерировать Seed фразу</string>
+    <string name="login_with_biometric">Вход по отпечатку</string>
+    <string name="save_seed_phrase">Сохранить Seed фразу</string>
+    <string name="address_number">№ адреса</string>
+    <string name="generate_keys">Получить адрес</string>
+    <string name="generating">Генерация…</string>
+    <string name="address">Адрес</string>
+    <string name="balance">Баланс</string>
+    <string name="ready_to_work">Готов к работе…</string>
+    <string name="keys_generated_success">Адрес успешно получен!</string>
+    <string name="my_wallet">Мой кошелёк</string>
+    <string name="wallet_info">Информация о кошельке</string>
+    
+    <!-- Send Tab -->
+    <string name="send_title">Отправка транзакции</string>
+    <string name="recipient_address">Адрес получателя</string>
+    <string name="amount">Сумма</string>
+    <string name="amount_hint">Сумма MINIMA</string>
+    <string name="send_transaction">Отправить транзакцию</string>
+    <string name="sending">Отправка…</string>
+    <string name="transaction_sent">Транзакция отправлена</string>
+    <string name="transaction_sent_success">Транзакция успешно создана и отправлена в сеть</string>
+    <string name="transaction_id">ID транзакции</string>
+    <string name="confirm_transaction">Подтверждение транзакции</string>
+    <string name="confirm_send_message" formatted="false">Вы уверены, что хотите отправить %s MINIMA на адрес:\n\n%s?</string>
+    <string name="yes_send">Да, отправить</string>
+    <string name="current_wallet">Текущий кошелёк</string>
+    
+    <!-- Settings Tab -->
+    <string name="settings_title">Настройки</string>
+    <string name="api_settings">Настройки API</string>
+    <string name="api_url">URL API</string>
+    <string name="api_url_hint">Полный URL API (например: https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD)</string>
+    <string name="language_settings">Настройки языка</string>
+    <string name="select_language">Выберите язык</string>
+    <string name="russian">Русский</string>
+    <string name="english">English</string>
+    <string name="actions">Действия</string>
+    <string name="clear_all_data">Очистить все данные</string>
+    
+    <!-- Biometric Messages -->
+    <string name="biometric_auth">Биометрическая аутентификация</string>
+    <string name="biometric_auth_subtitle">Подтвердите отпечаток пальца для доступа к seed фразе</string>
+    <string name="biometric_save_subtitle">Подтвердите отпечаток пальца для безопасного сохранения seed фразы</string>
+    <string name="biometric_auth_error">Ошибка аутентификации</string>
+    <string name="biometric_auth_failed">Аутентификация не удалась</string>
+    <string name="biometric_not_available">Биометрическая аутентификация недоступна</string>
+    <string name="phrase_restored">Фраза восстановлена</string>
+    <string name="phrase_saved">Фраза сохранена безопасно</string>
+    <string name="phrase_save_error">Ошибка сохранения фразы</string>
+    <string name="phrase_restore_error">Ошибка восстановления фразы</string>
+    
+    <!-- Error Messages -->
+    <string name="error_initialization">Ошибка инициализации приложения</string>
+    <string name="enter_address_number">Введите № адреса</string>
+    <string name="address_number_number">№ адреса должен быть числом</string>
+    <string name="error_generating_keys">Ошибка генерации ключей</string>
+    <string name="generate_keys_first">Сначала сгенерируйте адрес</string>
+    <string name="fill_recipient_and_amount">Заполните адрес получателя и сумму</string>
+    <string name="amount_greater_zero">Сумма должна быть больше 0</string>
+    <string name="amount_exceeds_balance">Сумма превышает баланс</string>
+    <string name="invalid_amount">Некорректная сумма</string>
+    <string name="error_sending_transaction">Ошибка отправки транзакции</string>
+    <string name="error_creating_transaction">Ошибка создания транзакции</string>
+    
+    <!-- Clear Data -->
+    <string name="clear_data_title">Очистка данных</string>
+    <string name="clear_data_message">Вы уверены, что хотите очистить все данные? Это действие нельзя отменить.</string>
+    <string name="clear">Очистить</string>
+    <string name="all_data_cleared">Все данные очищены</string>
+    
+    <!-- Progress Messages -->
+    <string name="setting_up_api">Настройка API…</string>
+    <string name="new_phrase_generated">Сгенерирована новая фраза</string>
+    <string name="processing_address_number">Обработка № адреса</string>
+    <string name="checking_balance">Проверка баланса…</string>
+    <string name="preparing_transaction">Подготовка транзакции…</string>
+    <string name="random_keyuse_selected">Случайно выбран keyuse</string>
+    <string name="creating_transaction">Создание транзакции…</string>
+    <string name="transaction_signed_locally">Транзакция подписана локально</string>
+    <string name="sending_to_network">Отправка транзакции в сеть…</string>
+    <string name="transaction_sent_to_network">Транзакция успешно отправлена в сеть</string>
+    <string name="keyuses_after_sign">Keyuses после подписи</string>
+
+    <!-- Added Strings -->
+    <string name="enter_seed_phrase">Введите seed фразу для сохранения</string>
+    <string name="not_generated">не сгенерирован</string>
+    <string name="enter_seed_phrase_manual">Введите seed фразу вручную</string>
+    <string name="saved_phrase_available">Доступна сохраненная фраза</string>
+    <string name="no_saved_phrase">Сохраненная фраза отсутствует</string>
+    <string name="settings_saved">Настройки сохранены</string>
+    
+    <!-- Missing Strings - Added -->
+    <string name="error_ui_initialization">Ошибка инициализации UI</string>
+    <string name="error_saved_phrase_check">Ошибка проверки сохраненной фразы</string>
+    <string name="loading_error">Ошибка загрузки</string>
+    <string name="error_generating_phrase">Ошибка генерации фразы</string>
+    <string name="keystore_not_available">KeyStore недоступен</string>
+    <string name="save_error">Ошибка сохранения</string>
+    <string name="url_validation_error">URL должен начинаться с http:// или https://</string>
+
+    <!-- Navigation Drawer -->
+    <string name="drawer_wallet">Кошелёк</string>
+    <string name="drawer_send">Отправка</string>
+    <string name="drawer_seed_phrase">Seed фраза</string>
+    <string name="drawer_settings">Настройки</string>
+    <string name="seed_phrase_management">Управление Seed фразой</string>
+    <string name="seed_phrase_not_loaded">Seed фраза не загружена. Перейдите в раздел \"Seed фраза\"</string>
+    <string name="app_version">Версия %s</string>
+    <string name="open_drawer">Открыть меню</string>
+    <string name="close_drawer">Закрыть меню</string>
+</resources>

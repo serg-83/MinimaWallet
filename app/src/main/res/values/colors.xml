@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+
+    <!-- Primary palette - Deep Teal -->
+    <color name="primary_color">#0D9488</color>
+    <color name="primary_dark">#0F766E</color>
+    <color name="primary_light">#5EEAD4</color>
+    <color name="primary_container">#CCFBF1</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="on_primary_container">#042F2E</color>
+
+    <!-- Secondary palette -->
+    <color name="secondary_color">#6366F1</color>
+    <color name="secondary_dark">#4F46E5</color>
+    <color name="secondary_light">#A5B4FC</color>
+    <color name="on_secondary">#FFFFFF</color>
+
+    <!-- Surface / Background -->
+    <color name="background_color">#F8FAFC</color>
+    <color name="surface_color">#FFFFFF</color>
+    <color name="surface_variant">#F1F5F9</color>
+    <color name="on_surface">#0F172A</color>
+    <color name="on_surface_variant">#475569</color>
+
+    <!-- Semantic colors -->
+    <color name="success_color">#059669</color>
+    <color name="success_container">#D1FAE5</color>
+    <color name="warning_color">#D97706</color>
+    <color name="warning_container">#FEF3C7</color>
+    <color name="error_color">#DC2626</color>
+    <color name="error_container">#FEE2E2</color>
+    <color name="info_color">#2563EB</color>
+    <color name="info_container">#DBEAFE</color>
+
+    <!-- Card -->
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_stroke">#E2E8F0</color>
+
+    <!-- Tab -->
+    <color name="tab_indicator">#5EEAD4</color>
+    <color name="tab_text_active">#FFFFFF</color>
+    <color name="tab_text_inactive">#99F6E4</color>
+
+    <!-- Gradient overlay -->
+    <color name="gradient_start">#0D9488</color>
+    <color name="gradient_end">#6366F1</color>
+
+    <!-- Divider -->
+    <color name="divider">#E2E8F0</color>
+
+    <!-- Balance highlight -->
+    <color name="balance_positive">#059669</color>
+    <color name="balance_zero">#94A3B8</color>
+
+    <!-- Drawer -->
+    <color name="drawer_item_selected">#E0F2F1</color>
+    <color name="drawer_scrim">#66000000</color>
+</resources>

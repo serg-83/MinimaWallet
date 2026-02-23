@@ -1,0 +1,99 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Загрузка параметров подписи из keystore.properties (файл не попадает в git)
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    namespace 'com.example.minimawallet'
+    compileSdk 33
+
+    defaultConfig {
+        applicationId "com.example.minimawallet"
+        minSdk 26
+        targetSdk 33
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        resConfigs "en", "ru"
+    }
+
+    signingConfigs {
+        release {
+            // Параметры берутся из keystore.properties или переменных среды CI
+            storeFile keystorePropertiesFile.exists()
+                    ? file(keystoreProperties['storeFile'])
+                    : file(System.getenv('KEYSTORE_FILE') ?: 'release-keystore.jks')
+            storePassword keystorePropertiesFile.exists()
+                    ? keystoreProperties['storePassword']
+                    : System.getenv('KEYSTORE_PASSWORD')
+            keyAlias keystorePropertiesFile.exists()
+                    ? keystoreProperties['keyAlias']
+                    : System.getenv('KEY_ALIAS')
+            keyPassword keystorePropertiesFile.exists()
+                    ? keystoreProperties['keyPassword']
+                    : System.getenv('KEY_PASSWORD')
+        }
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            crunchPngs false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+
+    packagingOptions {
+        exclude 'META-INF/**'
+        exclude '**/LogSender*'
+        exclude '**/logsender*'
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'androidx.biometric:biometric:1.1.0'
+    implementation 'androidx.drawerlayout:drawerlayout:1.2.0'
+    implementation 'androidx.fragment:fragment:1.5.7'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel:2.6.1'
+    implementation 'androidx.lifecycle:lifecycle-livedata:2.6.1'
+    implementation files('libs/minima.jar')
+
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}
+
+configurations.all {
+    resolutionStrategy {
+        force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.10'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-common:1.8.10'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.10'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.10'
+    }
+}

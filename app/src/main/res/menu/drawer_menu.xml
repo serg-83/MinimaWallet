@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group
+        android:id="@+id/group_main"
+        android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/nav_wallet"
+            android:icon="@android:drawable/ic_menu_myplaces"
+            android:title="@string/drawer_wallet" />
+
+        <item
+            android:id="@+id/nav_send"
+            android:icon="@android:drawable/ic_menu_send"
+            android:title="@string/drawer_send" />
+
+    </group>
+
+    <group
+        android:id="@+id/group_seed"
+        android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/nav_seed_phrase"
+            android:icon="@android:drawable/ic_lock_lock"
+            android:title="@string/drawer_seed_phrase" />
+
+    </group>
+
+    <group
+        android:id="@+id/group_other"
+        android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/nav_settings"
+            android:icon="@android:drawable/ic_menu_preferences"
+            android:title="@string/drawer_settings" />
+
+    </group>
+
+</menu>
