@@ -21,7 +21,27 @@
 
 ### О проекте
 
-MinimaWallet — нативное Android-приложение для управления ключами и взаимодействия с блокчейн-сетью Minima. Реализован чистый интерфейс в стиле **Material Design 3** с боковым навигационным меню (Navigation Drawer) и биометрической защитой.
+MinimaWallet — нативное Android-приложение для управления ключами и взаимодействия с блокчейн-сетью Minima. **Не требует запуска собственной ноды.** Реализован чистый интерфейс в стиле **Material Design 3** с боковым навигационным меню (Navigation Drawer) и биометрической защитой.
+
+### Как это работает
+
+```
+Seed-фраза → [локально] → Приватный ключ + Адрес
+                                    │
+              ┌─────────────────────┼─────────────────────┐
+              ▼                     ▼                     ▼
+     Запрос баланса       Получение неподписанной    Отправка подписанной
+    wallet.minima.global      транзакции              транзакции
+         (API)             wallet.minima.global     wallet.minima.global
+                                (API)                    (API)
+                                    │
+                                    ▼
+                          [локально, без интернета]
+                            Подписание транзакции
+                            приватным ключом
+```
+
+> 🔐 **Приватный ключ никогда не покидает устройство.** Подписание происходит локально, без передачи ключа в сеть. Через API передаются только публичные данные: адрес, баланс, неподписанная и подписанная транзакция.
 
 ### Возможности
 
@@ -35,6 +55,9 @@ MinimaWallet — нативное Android-приложение для управ
 
 ### Безопасность
 
+- **Нода не нужна** — приложение работает через публичный API `wallet.minima.global`
+- **Ключи на лету** — приватный ключ генерируется из seed-фразы каждый раз заново и нигде не сохраняется
+- **Подписание офлайн** — транзакция подписывается локально на устройстве без передачи ключа в сеть
 - Сид-фраза хранится **только** в зашифрованном хранилище Android Keystore (AES-256-GCM)
 - Генерация ключей на базе **SecureRandom** (без java.util.Random)
 - Биометрическая защита через **BiometricPrompt**
@@ -101,7 +124,26 @@ Release-сборка запускается автоматически при п
 
 ### About
 
-MinimaWallet is a native Android application for managing keys and interacting with the Minima blockchain network. Built with **Material Design 3**, Navigation Drawer navigation, and biometric protection.
+MinimaWallet is a native Android application for managing keys and interacting with the Minima blockchain network. **No node required.** Built with **Material Design 3**, Navigation Drawer navigation, and biometric protection.
+
+### How it works
+
+```
+Seed Phrase → [locally] → Private Key + Address
+                                  │
+            ┌─────────────────────┼─────────────────────┐
+            ▼                     ▼                     ▼
+     Request balance      Get unsigned transaction   Broadcast signed
+    wallet.minima.global   wallet.minima.global      transaction
+          (API)                  (API)            wallet.minima.global
+                                  │                    (API)
+                                  ▼
+                       [locally, no internet]
+                        Sign transaction with
+                           private key
+```
+
+> 🔐 **The private key never leaves the device.** Signing happens locally without transmitting the key over the network. Only public data is sent via API: address, balance, unsigned and signed transaction.
 
 ### Features
 
@@ -115,6 +157,9 @@ MinimaWallet is a native Android application for managing keys and interacting w
 
 ### Security
 
+- **No node required** — the app works via the public API `wallet.minima.global`
+- **Keys on-the-fly** — private key is derived from the seed phrase each time and never stored
+- **Offline signing** — transactions are signed locally on the device, the key is never sent over the network
 - Seed phrase stored **exclusively** in Android Keystore encrypted storage (AES-256-GCM)
 - Key generation using **SecureRandom** (no java.util.Random)
 - Biometric authentication via **BiometricPrompt**
