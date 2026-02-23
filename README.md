@@ -1,153 +1,165 @@
+<div align="center">
+
 # MinimaWallet
 
-> Android wallet application for the [Minima](https://minima.global) blockchain network.
->
-> Android-кошелёк для блокчейн-сети [Minima](https://minima.global).
+**Нативный Android-кошелёк для блокчейн-сети [Minima](https://minima.global)**
+**Native Android wallet for the [Minima](https://minima.global) blockchain network**
 
----
+[![Build APK](https://github.com/serg-83/MinimaWallet/actions/workflows/build.yml/badge.svg)](https://github.com/serg-83/MinimaWallet/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/serg-83/MinimaWallet?color=0D9488)](https://github.com/serg-83/MinimaWallet/releases/latest)
+[![Min SDK](https://img.shields.io/badge/Android-8.0%2B-brightgreen?logo=android)](https://developer.android.com/about/versions/oreo)
+[![Language](https://img.shields.io/badge/Java-8-orange?logo=openjdk)](https://openjdk.org)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-## English
+[**Скачать APK**](https://github.com/serg-83/MinimaWallet/releases/latest) · [Releases](https://github.com/serg-83/MinimaWallet/releases)
 
-### About
-MinimaWallet is a native Android application for managing keys and interacting with the Minima blockchain network. It provides a clean Material Design interface with a Navigation Drawer for easy navigation between sections.
-
-### Features
-- **Wallet** — view balance, generate cryptographic keys
-- **Send** — send transactions to the Minima network
-- **Seed Phrase** — securely store and manage your seed phrase
-- **Settings** — configure node URL and application preferences
-- **Biometric protection** — fingerprint authentication on startup if a seed phrase is saved
-- **Secure storage** — seed phrase is stored encrypted using Android Keystore
-
-### Architecture
-- Language: **Java**
-- Min SDK: **26 (Android 8.0)**
-- Target SDK: **33 (Android 13)**
-- UI: **Material Design 3**, Navigation Drawer, ViewBinding
-- Security: **SecureRandom**, Android Keystore, BiometricPrompt
-- Background work: **ExecutorService** (no deprecated AsyncTask)
-
-### Project Structure
-```
-app/src/main/java/com/example/minimawallet/
-├── MainActivity.java        # Main activity, Navigation Drawer
-├── WalletFragment.java      # Wallet tab: balance and key generation
-├── SendFragment.java        # Send transactions
-├── SeedPhraseFragment.java  # Seed phrase management
-├── SettingsFragment.java    # Settings
-├── WalletViewModel.java     # Shared state between fragments (LiveData)
-├── KeyGenerator.java        # Cryptographic key generation (SecureRandom)
-└── SecureStorage.java       # Encrypted storage via Android Keystore
-```
-
-### Building
-
-#### Debug build (local)
-```bash
-./gradlew assembleDebug
-# APK: app/build/outputs/apk/debug/app-debug.apk
-```
-
-#### Release build (local)
-Create `keystore.properties` in the project root (this file is NOT committed to git):
-```properties
-storeFile=release-keystore.jks
-storePassword=YOUR_STORE_PASSWORD
-keyAlias=YOUR_KEY_ALIAS
-keyPassword=YOUR_KEY_PASSWORD
-```
-Then run:
-```bash
-./gradlew assembleRelease
-# APK: app/build/outputs/apk/release/app-release.apk
-```
-
-#### CI/CD (GitHub Actions)
-Release builds are automatically triggered on push to `main`. The keystore is stored as GitHub Secrets (never in the repository). See [.github/workflows/build.yml](.github/workflows/build.yml).
-
-### Security Notes
-- `*.jks` and `keystore.properties` are excluded from git via `.gitignore`
-- Never commit your signing keys or passwords to version control
-- Seed phrase is stored only in encrypted Android Keystore storage, never in plain text
-
-### Requirements
-- Android Studio or Gradle 8.5+
-- JDK 17+
-- Android SDK (compileSdk 33)
+</div>
 
 ---
 
 ## Русский
 
 ### О проекте
-MinimaWallet — нативное Android-приложение для управления ключами и взаимодействия с блокчейн-сетью Minima. Реализован чистый интерфейс в стиле Material Design с боковым навигационным меню (Navigation Drawer).
 
-### Функциональность
-- **Кошелёк** — просмотр баланса, генерация криптографических ключей
-- **Отправка** — отправка транзакций в сеть Minima
-- **Seed-фраза** — безопасное хранение и управление сид-фразой
-- **Настройки** — настройка URL узла и параметров приложения
-- **Биометрическая защита** — при запуске запрашивает отпечаток пальца, если сид-фраза сохранена
-- **Безопасное хранилище** — сид-фраза хранится в зашифрованном виде через Android Keystore
+MinimaWallet — нативное Android-приложение для управления ключами и взаимодействия с блокчейн-сетью Minima. Реализован чистый интерфейс в стиле **Material Design 3** с боковым навигационным меню (Navigation Drawer) и биометрической защитой.
+
+### Возможности
+
+| Раздел | Описание |
+|---|---|
+| 💰 **Кошелёк** | Просмотр баланса, генерация криптографических ключей и адресов |
+| 📤 **Отправка** | Отправка транзакций в сеть Minima |
+| 🔑 **Seed-фраза** | Безопасное хранение и управление сид-фразой (BIP39) |
+| ⚙️ **Настройки** | Настройка URL узла, выбор языка интерфейса |
+| 🔒 **Биометрия** | Аутентификация по отпечатку пальца при запуске |
+
+### Безопасность
+
+- Сид-фраза хранится **только** в зашифрованном хранилище Android Keystore (AES-256-GCM)
+- Генерация ключей на базе **SecureRandom** (без java.util.Random)
+- Биометрическая защита через **BiometricPrompt**
+- Запрещён cleartext-трафик (`network_security_config.xml`)
 
 ### Архитектура
-- Язык: **Java**
-- Минимальный SDK: **26 (Android 8.0)**
-- Целевой SDK: **33 (Android 13)**
-- UI: **Material Design 3**, Navigation Drawer, ViewBinding
-- Безопасность: **SecureRandom**, Android Keystore, BiometricPrompt
-- Фоновые задачи: **ExecutorService** (без устаревшего AsyncTask)
 
-### Структура проекта
 ```
 app/src/main/java/com/example/minimawallet/
 ├── MainActivity.java        # Главная активность, Navigation Drawer
-├── WalletFragment.java      # Вкладка кошелька: баланс и генерация ключей
+├── WalletFragment.java      # Баланс и генерация ключей
 ├── SendFragment.java        # Отправка транзакций
 ├── SeedPhraseFragment.java  # Управление сид-фразой
 ├── SettingsFragment.java    # Настройки
-├── WalletViewModel.java     # Общее состояние между фрагментами (LiveData)
-├── KeyGenerator.java        # Генерация криптографических ключей (SecureRandom)
-└── SecureStorage.java       # Зашифрованное хранилище через Android Keystore
+├── WalletViewModel.java     # Общее состояние (LiveData)
+├── KeyGenerator.java        # Генерация ключей (SecureRandom + ExecutorService)
+└── SecureStorage.java       # Зашифрованное хранилище (Android Keystore)
 ```
+
+**Стек:** Java · Material Design 3 · ViewBinding · ViewModel/LiveData · BiometricPrompt · Android Keystore
+
+### Установка
+
+Скачайте `app-release.apk` из [Releases](https://github.com/serg-83/MinimaWallet/releases/latest) и установите на Android-устройство.
+
+> ⚠️ Разрешите установку из неизвестных источников в настройках Android.
 
 ### Сборка
 
-#### Debug-сборка (локально)
+<details>
+<summary>Debug (локально)</summary>
+
 ```bash
 ./gradlew assembleDebug
 # APK: app/build/outputs/apk/debug/app-debug.apk
 ```
+</details>
 
-#### Release-сборка (локально)
-Создайте файл `keystore.properties` в корне проекта (он НЕ попадает в git):
+<details>
+<summary>Release (локально)</summary>
+
+Создайте `keystore.properties` в корне проекта (не попадает в git):
 ```properties
 storeFile=release-keystore.jks
-storePassword=ВАШ_ПАРОЛЬ_ХРАНИЛИЩА
-keyAlias=ВАШ_АЛИАС_КЛЮЧА
+storePassword=ВАШ_ПАРОЛЬ
+keyAlias=ВАШ_АЛИАС
 keyPassword=ВАШ_ПАРОЛЬ_КЛЮЧА
 ```
-Затем запустите:
 ```bash
 ./gradlew assembleRelease
 # APK: app/build/outputs/apk/release/app-release.apk
 ```
+</details>
 
-#### CI/CD (GitHub Actions)
-Release-сборка запускается автоматически при пуше в ветку `main`. Keystore хранится в GitHub Secrets (никогда не в репозитории). См. [.github/workflows/build.yml](.github/workflows/build.yml).
+<details>
+<summary>CI/CD (GitHub Actions)</summary>
 
-### Безопасность
-- `*.jks` и `keystore.properties` исключены из git через `.gitignore`
-- Никогда не коммитьте ключи подписи или пароли в систему контроля версий
-- Сид-фраза хранится только в зашифрованном хранилище Android Keystore, никогда в открытом виде
+Release-сборка запускается автоматически при пуше тега `v*.*.*`. Keystore хранится в GitHub Secrets — никогда не в репозитории. См. [build.yml](.github/workflows/build.yml).
+</details>
 
-### Требования
-- Android Studio или Gradle 8.5+
-- JDK 17+
-- Android SDK (compileSdk 33)
+---
+
+## English
+
+### About
+
+MinimaWallet is a native Android application for managing keys and interacting with the Minima blockchain network. Built with **Material Design 3**, Navigation Drawer navigation, and biometric protection.
+
+### Features
+
+| Section | Description |
+|---|---|
+| 💰 **Wallet** | View balance, generate cryptographic keys and addresses |
+| 📤 **Send** | Send transactions to the Minima network |
+| 🔑 **Seed Phrase** | Securely store and manage your seed phrase (BIP39) |
+| ⚙️ **Settings** | Configure node URL and language preference |
+| 🔒 **Biometrics** | Fingerprint authentication on startup |
+
+### Security
+
+- Seed phrase stored **exclusively** in Android Keystore encrypted storage (AES-256-GCM)
+- Key generation using **SecureRandom** (no java.util.Random)
+- Biometric authentication via **BiometricPrompt**
+- Cleartext traffic blocked via `network_security_config.xml`
+
+### Tech Stack
+
+**Java** · Material Design 3 · ViewBinding · ViewModel/LiveData · BiometricPrompt · Android Keystore
+Min SDK: **26 (Android 8.0)** · Target SDK: **33 (Android 13)**
+
+### Build
+
+<details>
+<summary>Debug (local)</summary>
+
+```bash
+./gradlew assembleDebug
+# APK: app/build/outputs/apk/debug/app-debug.apk
+```
+</details>
+
+<details>
+<summary>Release (local)</summary>
+
+Create `keystore.properties` in the project root (excluded from git):
+```properties
+storeFile=release-keystore.jks
+storePassword=YOUR_STORE_PASSWORD
+keyAlias=YOUR_KEY_ALIAS
+keyPassword=YOUR_KEY_PASSWORD
+```
+```bash
+./gradlew assembleRelease
+# APK: app/build/outputs/apk/release/app-release.apk
+```
+</details>
+
+<details>
+<summary>CI/CD (GitHub Actions)</summary>
+
+Release APK is built automatically on `v*.*.*` tag push. Keystore is stored in GitHub Secrets — never in the repository. See [build.yml](.github/workflows/build.yml).
+</details>
 
 ---
 
 ## License / Лицензия
 
-MIT License — see [LICENSE](LICENSE)
+[MIT License](LICENSE)
