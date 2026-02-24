@@ -72,6 +72,14 @@ android {
         exclude '**/LogSender*'
         exclude '**/logsender*'
     }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def buildType = variant.buildType.name
+            def version = variant.versionName
+            outputFileName = "MinimaWallet-${version}-${buildType}.apk"
+        }
+    }
 }
 
 dependencies {

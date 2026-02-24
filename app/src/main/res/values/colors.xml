@@ -34,6 +34,9 @@
     <color name="info_color">#2563EB</color>
     <color name="info_container">#DBEAFE</color>
 
+    <!-- Launcher icon background -->
+    <color name="ic_launcher_background">#0F766E</color>
+
     <!-- Card -->
     <color name="card_background">#FFFFFF</color>
     <color name="card_stroke">#E2E8F0</color>
