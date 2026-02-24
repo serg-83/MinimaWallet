@@ -132,4 +132,10 @@
     <string name="open_drawer">Open menu</string>
     <string name="close_drawer">Close menu</string>
     <string name="paste_address">Paste address</string>
+    <string name="drawer_log">Server Log</string>
+    <string name="refresh_balance">Refresh balance</string>
+    <string name="log_title">Server Log</string>
+    <string name="log_empty">Log is empty. Make a server request first.</string>
+    <string name="log_clear">Clear log</string>
+    <string name="log_entries_suffix">entries</string>
 </resources>

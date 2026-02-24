@@ -28,7 +28,7 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
     // UI elements
     private TextInputEditText addressNumberEdit;
     private MaterialTextView progressText, addressText, balanceText, seedStatusText;
-    private MaterialButton generateKeysBtn;
+    private MaterialButton generateKeysBtn, refreshBalanceBtn;
     private ProgressBar loadingProgress;
 
     private boolean isFragmentInitialized = false;
@@ -101,6 +101,7 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
             addressText = view.findViewById(R.id.address_text);
             balanceText = view.findViewById(R.id.balance_text);
             generateKeysBtn = view.findViewById(R.id.generate_keys_btn);
+            refreshBalanceBtn = view.findViewById(R.id.refresh_balance_btn);
             loadingProgress = view.findViewById(R.id.loading_progress);
             seedStatusText = view.findViewById(R.id.seed_status_text);
         } catch (Exception e) {
@@ -121,6 +122,45 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
     private void setupClickListeners() {
         if (generateKeysBtn != null) {
             generateKeysBtn.setOnClickListener(v -> generateKeys());
+        }
+        if (refreshBalanceBtn != null) {
+            refreshBalanceBtn.setOnClickListener(v -> refreshBalance());
+        }
+    }
+
+    private void refreshBalance() {
+        KeyData currentKeyData = walletViewModel.getCurrentKeyData();
+        if (currentKeyData == null || currentKeyData.miniAddress == null) {
+            showToast(getString(R.string.generate_keys_first));
+            return;
+        }
+
+        String phrase = walletViewModel.getCurrentSeedPhrase();
+        if (phrase == null || phrase.isEmpty()) {
+            showToast(getString(R.string.seed_phrase_not_loaded));
+            return;
+        }
+
+        if (refreshBalanceBtn != null) refreshBalanceBtn.setEnabled(false);
+        if (progressText != null) progressText.setText(R.string.checking_balance);
+
+        String apiUrl = sharedPreferences != null
+                ? sharedPreferences.getString("api_url", "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD")
+                : "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD";
+
+        // Переинициализируем с тем же адресом для обновления баланса
+        if (addressNumberEdit != null && !addressNumberEdit.getText().toString().isEmpty()) {
+            try {
+                int addressNumber = Integer.parseInt(addressNumberEdit.getText().toString());
+                if (keyGenerator != null) {
+                    keyGenerator.initialize(apiUrl, phrase, addressNumber);
+                }
+            } catch (NumberFormatException e) {
+                if (refreshBalanceBtn != null) refreshBalanceBtn.setEnabled(true);
+            }
+        } else {
+            if (refreshBalanceBtn != null) refreshBalanceBtn.setEnabled(true);
+            showToast(getString(R.string.enter_address_number));
         }
     }
 
@@ -187,6 +227,7 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
                     generateKeysBtn.setEnabled(true);
                     generateKeysBtn.setText(R.string.generate_keys);
                 }
+                if (refreshBalanceBtn != null) refreshBalanceBtn.setEnabled(true);
 
                 updateWalletDisplay();
 
@@ -213,8 +254,16 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
                     generateKeysBtn.setEnabled(true);
                     generateKeysBtn.setText(R.string.generate_keys);
                 }
+                if (refreshBalanceBtn != null) refreshBalanceBtn.setEnabled(true);
                 showToast(getString(R.string.error) + ": " + error);
             });
+        }
+    }
+
+    @Override
+    public void onServerLog(String command, String response) {
+        if (walletViewModel != null) {
+            walletViewModel.addServerLog("CMD: " + command + "\nRES: " + response);
         }
     }
 

@@ -51,6 +51,7 @@ public class KeyGenerator {
         void onKeyGenerated(KeyData keyData);
         void onTransactionCreated(String txId);
         void onError(String error);
+        default void onServerLog(String command, String response) {}
     }
 
     public KeyGenerator(KeyGeneratorCallback callback) {
@@ -173,6 +174,12 @@ public class KeyGenerator {
         });
     }
 
+    private void postServerLog(String command, String response) {
+        mainHandler.post(() -> {
+            if (callback != null) callback.onServerLog(command, response);
+        });
+    }
+
     private KeyData processAddressNumber(MiniData seed, int addressNumber) {
         try {
             postProgress("Адрес #" + addressNumber);
@@ -247,14 +254,20 @@ public class KeyGenerator {
 
                     if (cancelled.get()) return "0";
 
-                    String confirmed = extractValue(response.toString(), "confirmed");
+                    String responseStr = response.toString();
+                    postServerLog("balance address:" + miniAddress, responseStr);
+
+                    String confirmed = extractValue(responseStr, "confirmed");
                     if (confirmed != null) {
                         return confirmed;
                     }
                 }
+            } else {
+                postServerLog("balance address:" + miniAddress, "HTTP " + responseCode);
             }
         } catch (Exception e) {
             Log.e(TAG, "Balance check error: " + e.getMessage());
+            postServerLog("balance address:" + miniAddress, "Ошибка: " + e.getMessage());
         } finally {
             if (connection != null) connection.disconnect();
         }
@@ -329,8 +342,11 @@ public class KeyGenerator {
 
                     if (cancelled.get()) return null;
 
+                    String responseStr = response.toString();
+                    postServerLog("createfrom amount:" + amount, responseStr);
+
                     JSONParser parser = new JSONParser();
-                    Object parsedResponse = parser.parse(response.toString());
+                    Object parsedResponse = parser.parse(responseStr);
 
                     if (parsedResponse instanceof JSONObject) {
                         JSONObject jsonResponse = (JSONObject) parsedResponse;
@@ -340,9 +356,12 @@ public class KeyGenerator {
                         }
                     }
                 }
+            } else {
+                postServerLog("createfrom amount:" + amount, "HTTP " + responseCode);
             }
         } catch (Exception e) {
             Log.e(TAG, "Create transaction error: " + e.getMessage());
+            postServerLog("createfrom amount:" + amount, "Ошибка: " + e.getMessage());
         } finally {
             if (connection != null) connection.disconnect();
         }
@@ -425,15 +444,26 @@ public class KeyGenerator {
 
             int responseCode = connection.getResponseCode();
             if (responseCode == HttpURLConnection.HTTP_OK) {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(connection.getInputStream()))) {
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
+                    }
+                    postServerLog("postfrom", response.toString());
+                }
                 postProgress("Транзакция отправлена в сеть");
                 return true;
             } else {
+                postServerLog("postfrom", "HTTP " + responseCode);
                 postProgress("Ошибка отправки: код " + responseCode);
                 return false;
             }
 
         } catch (Exception e) {
             Log.e(TAG, "Send transaction error: " + e.getMessage());
+            postServerLog("postfrom", "Ошибка: " + e.getMessage());
             return false;
         } finally {
             if (connection != null) connection.disconnect();

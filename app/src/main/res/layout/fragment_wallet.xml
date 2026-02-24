@@ -41,14 +41,35 @@
                 android:orientation="vertical"
                 android:padding="24dp">
 
-                <TextView
+                <!-- Row: label + refresh button -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/balance"
-                    android:textColor="@color/on_card_label"
-                    android:textSize="13sp"
-                    android:letterSpacing="0.08"
-                    android:textAllCaps="true" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/balance"
+                        android:textColor="@color/on_card_label"
+                        android:textSize="13sp"
+                        android:letterSpacing="0.08"
+                        android:textAllCaps="true" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/refresh_balance_btn"
+                        style="@style/Widget.Material3.Button.IconButton"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:padding="4dp"
+                        app:icon="@drawable/ic_refresh"
+                        app:iconTint="@color/on_card_label"
+                        app:iconSize="20dp"
+                        android:contentDescription="@string/refresh_balance" />
+
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/balance_text"

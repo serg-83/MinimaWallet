@@ -245,6 +245,13 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
     }
 
     @Override
+    public void onServerLog(String command, String response) {
+        if (walletViewModel != null) {
+            walletViewModel.addServerLog("CMD: " + command + "\nRES: " + response);
+        }
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
         updateWalletInfo();
