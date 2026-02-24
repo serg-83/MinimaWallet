@@ -1,30 +1,24 @@
-name: Build APK
+name: Build & Release APK
 
-# Запускается при пуше тега vX.X.X или в main, и при pull request
-# Triggered on version tag push, push to main, and pull requests
 on:
   push:
     branches: [ "main" ]
-    tags:
-      - 'v*.*.*'
   pull_request:
     branches: [ "main" ]
 
 jobs:
   build:
-    name: Build Debug & Release APK
+    name: Build & Release APK
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      # Получаем исходный код
-      # Checkout source code
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # Устанавливаем JDK 17
-      # Set up JDK 17
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -32,29 +26,40 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      # Даём права на выполнение gradlew
-      # Grant execute permission for gradlew
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Сборка Debug APK
-      # Build Debug APK
+      - name: Get version from build.gradle
+        id: version
+        run: |
+          VERSION=$(grep 'versionName' app/build.gradle | head -1 | sed 's/.*versionName "\(.*\)"/\1/' | tr -d ' ')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Check if tag already exists
+        id: tag_check
+        run: |
+          if git ls-remote --tags origin "refs/tags/v${{ steps.version.outputs.version }}" | grep -q .; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Tag v${{ steps.version.outputs.version }} already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Tag v${{ steps.version.outputs.version }} is new"
+          fi
+
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon
 
-      # Восстанавливаем keystore из секрета GitHub (base64)
-      # Restore keystore from GitHub Secret (base64 encoded)
       - name: Decode Keystore
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'push'
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > app/release-keystore.jks
 
-      # Сборка Release APK
-      # Build Release APK
       - name: Build Release APK
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'push'
         env:
           KEYSTORE_FILE: release-keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
@@ -62,41 +67,36 @@ jobs:
           KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: ./gradlew assembleRelease --no-daemon
 
-      # Публикуем Debug APK как артефакт
-      # Upload Debug APK as artifact
-      - name: Upload Debug APK
+      - name: Upload Debug APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk
           path: app/build/outputs/apk/debug/MinimaWallet-*.apk
           retention-days: 30
 
-      # Публикуем Release APK как артефакт
-      # Upload Release APK as artifact
-      - name: Upload Release APK
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+      - name: Upload Release APK artifact
+        if: github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
           path: app/build/outputs/apk/release/MinimaWallet-*.apk
           retention-days: 30
 
-      # Создаём GitHub Release с APK при пуше тега
-      # Create GitHub Release with APK on tag push
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Create tag and GitHub Release
+        if: github.event_name == 'push' && steps.tag_check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          name: MinimaWallet ${{ github.ref_name }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: MinimaWallet ${{ steps.version.outputs.tag }}
           body: |
-            ## MinimaWallet ${{ github.ref_name }}
+            ## MinimaWallet ${{ steps.version.outputs.tag }}
 
             Нативный Android-кошелёк для сети Minima.
             Native Android wallet for the Minima blockchain network.
 
             ### Установка / Installation
-            Скачайте `app-release.apk` и установите на Android устройство.
-            Download `app-release.apk` and install on your Android device.
+            Скачайте `MinimaWallet-*-release.apk` и установите на Android устройство.
+            Download `MinimaWallet-*-release.apk` and install on your Android device.
 
             > ⚠️ Разрешите установку из неизвестных источников в настройках Android.
             > ⚠️ Allow installation from unknown sources in Android settings.
@@ -106,8 +106,6 @@ jobs:
           draft: false
           prerelease: false
 
-      # Очищаем keystore из файловой системы после сборки
-      # Clean up keystore file after build
       - name: Clean up keystore
         if: always()
         run: rm -f app/release-keystore.jks
