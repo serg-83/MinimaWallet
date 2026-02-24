@@ -77,7 +77,7 @@
                     android:layout_height="wrap_content"
                     android:text="0 MINIMA"
                     android:textColor="@color/white"
-                    android:textSize="32sp"
+                    android:textSize="28sp"
                     android:textStyle="bold"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="16dp" />
