@@ -68,7 +68,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/MinimaWallet-*.apk
           retention-days: 30
 
       # Публикуем Release APK как артефакт
@@ -78,7 +78,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          path: app/build/outputs/apk/release/MinimaWallet-*.apk
           retention-days: 30
 
       # Создаём GitHub Release с APK при пуше тега
@@ -101,8 +101,8 @@ jobs:
             > ⚠️ Разрешите установку из неизвестных источников в настройках Android.
             > ⚠️ Allow installation from unknown sources in Android settings.
           files: |
-            app/build/outputs/apk/release/app-release.apk
-            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/release/MinimaWallet-*.apk
+            app/build/outputs/apk/debug/MinimaWallet-*.apk
           draft: false
           prerelease: false
 
