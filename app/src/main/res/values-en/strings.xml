@@ -131,4 +131,5 @@
     <string name="app_version">Version %s</string>
     <string name="open_drawer">Open menu</string>
     <string name="close_drawer">Close menu</string>
+    <string name="paste_address">Paste address</string>
 </resources>

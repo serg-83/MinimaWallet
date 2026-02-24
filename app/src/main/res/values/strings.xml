@@ -131,4 +131,5 @@
     <string name="app_version">Версия %s</string>
     <string name="open_drawer">Открыть меню</string>
     <string name="close_drawer">Закрыть меню</string>
+    <string name="paste_address">Вставить адрес</string>
 </resources>

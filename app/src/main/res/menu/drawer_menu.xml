@@ -7,12 +7,12 @@
 
         <item
             android:id="@+id/nav_wallet"
-            android:icon="@android:drawable/ic_menu_myplaces"
+            android:icon="@drawable/ic_wallet"
             android:title="@string/drawer_wallet" />
 
         <item
             android:id="@+id/nav_send"
-            android:icon="@android:drawable/ic_menu_send"
+            android:icon="@drawable/ic_send"
             android:title="@string/drawer_send" />
 
     </group>
@@ -23,7 +23,7 @@
 
         <item
             android:id="@+id/nav_seed_phrase"
-            android:icon="@android:drawable/ic_lock_lock"
+            android:icon="@drawable/ic_key"
             android:title="@string/drawer_seed_phrase" />
 
     </group>
@@ -34,7 +34,7 @@
 
         <item
             android:id="@+id/nav_settings"
-            android:icon="@android:drawable/ic_menu_preferences"
+            android:icon="@drawable/ic_settings"
             android:title="@string/drawer_settings" />
 
     </group>

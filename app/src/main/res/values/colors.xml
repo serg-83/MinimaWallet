@@ -57,4 +57,7 @@
     <!-- Drawer -->
     <color name="drawer_item_selected">#E0F2F1</color>
     <color name="drawer_scrim">#66000000</color>
+
+    <!-- Card label color -->
+    <color name="on_card_label">#B2DFDB</color>
 </resources>

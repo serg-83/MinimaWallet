@@ -1,5 +1,7 @@
 package com.example.minimawallet;
 
+import android.content.ClipboardManager;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -17,6 +19,7 @@ import com.example.minimawallet.KeyGenerator.KeyData;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.android.material.textview.MaterialTextView;
 
 import java.math.BigDecimal;
@@ -28,6 +31,7 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
     private WalletViewModel walletViewModel;
 
     private TextInputEditText recipientAddressEdit, amountEdit;
+    private TextInputLayout recipientAddressLayout;
     private MaterialTextView currentAddressText, currentBalanceText;
     private MaterialButton sendTransactionBtn;
 
@@ -62,6 +66,7 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
 
     private void initializeViews(View view) {
         recipientAddressEdit = view.findViewById(R.id.recipient_address_edit);
+        recipientAddressLayout = view.findViewById(R.id.recipient_address_layout);
         amountEdit = view.findViewById(R.id.amount_edit);
         currentAddressText = view.findViewById(R.id.current_address_text);
         currentBalanceText = view.findViewById(R.id.current_balance_text);
@@ -75,6 +80,26 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
                     sendTransactionWithConfirmation();
                 }
             });
+        }
+        if (recipientAddressLayout != null) {
+            recipientAddressLayout.setEndIconOnClickListener(v -> pasteAddressFromClipboard());
+        }
+    }
+
+    private void pasteAddressFromClipboard() {
+        try {
+            ClipboardManager clipboard = (ClipboardManager) requireContext().getSystemService(Context.CLIPBOARD_SERVICE);
+            if (clipboard != null && clipboard.hasPrimaryClip()) {
+                ClipData clip = clipboard.getPrimaryClip();
+                if (clip != null && clip.getItemCount() > 0) {
+                    CharSequence text = clip.getItemAt(0).coerceToText(requireContext());
+                    if (text != null && recipientAddressEdit != null) {
+                        recipientAddressEdit.setText(text.toString().trim());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Ignore clipboard errors
         }
     }
 
@@ -230,6 +255,7 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
         super.onDestroyView();
         if (keyGenerator != null) {
             keyGenerator.cleanup();
+            keyGenerator = null;
         }
     }
 }

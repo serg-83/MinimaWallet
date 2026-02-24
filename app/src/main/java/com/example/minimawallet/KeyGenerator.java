@@ -34,8 +34,10 @@ import org.minima.utils.json.parser.JSONParser;
 
 public class KeyGenerator {
     private static final String TAG = "KeyGenerator";
-    private static volatile String apiUrl;
+    private static final String DEFAULT_API_URL = "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD";
     private static final SecureRandom secureRandom = new SecureRandom();
+
+    private volatile String apiUrl = DEFAULT_API_URL;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -63,9 +65,7 @@ public class KeyGenerator {
             try {
                 postProgress("Настройка API...");
 
-                if (apiUrlParam == null || apiUrlParam.isEmpty()) {
-                    apiUrl = "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD";
-                } else {
+                if (apiUrlParam != null && !apiUrlParam.isEmpty()) {
                     apiUrl = apiUrlParam;
                 }
 
@@ -115,9 +115,7 @@ public class KeyGenerator {
             try {
                 postProgress("Подготовка транзакции...");
 
-                if (apiUrlParam == null || apiUrlParam.isEmpty()) {
-                    apiUrl = "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD";
-                } else {
+                if (apiUrlParam != null && !apiUrlParam.isEmpty()) {
                     apiUrl = apiUrlParam;
                 }
 
@@ -250,7 +248,7 @@ public class KeyGenerator {
                     if (cancelled.get()) return "0";
 
                     String confirmed = extractValue(response.toString(), "confirmed");
-                    if (!"N/A".equals(confirmed)) {
+                    if (confirmed != null) {
                         return confirmed;
                     }
                 }
@@ -280,8 +278,8 @@ public class KeyGenerator {
             if (signedTransaction != null) {
                 postProgress("Транзакция подписана");
 
-                sendSignedTransaction(signedTransaction);
-                return "Транзакция успешно отправлена";
+                boolean sent = sendSignedTransaction(signedTransaction);
+                return sent ? "Транзакция успешно отправлена" : null;
             } else {
                 postProgress("Ошибка подписи");
                 return null;
@@ -393,15 +391,16 @@ public class KeyGenerator {
             dos.flush();
             byte[] data = baos.toByteArray();
             MiniData miniData = new MiniData(data);
-            return miniData.to0xString().substring(2);
+            String hex = miniData.to0xString();
+            return hex.length() >= 2 ? hex.substring(2) : hex;
         } catch (Exception e) {
             Log.e(TAG, "Serialization error: " + e.getMessage());
             return null;
         }
     }
 
-    private void sendSignedTransaction(String signedTransaction) {
-        if (cancelled.get()) return;
+    private boolean sendSignedTransaction(String signedTransaction) {
+        if (cancelled.get()) return false;
 
         String requestBody = "postfrom data:" + signedTransaction + " mine:true";
         HttpURLConnection connection = null;
@@ -422,17 +421,20 @@ public class KeyGenerator {
                 os.flush();
             }
 
-            if (cancelled.get()) return;
+            if (cancelled.get()) return false;
 
             int responseCode = connection.getResponseCode();
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 postProgress("Транзакция отправлена в сеть");
+                return true;
             } else {
                 postProgress("Ошибка отправки: код " + responseCode);
+                return false;
             }
 
         } catch (Exception e) {
             Log.e(TAG, "Send transaction error: " + e.getMessage());
+            return false;
         } finally {
             if (connection != null) connection.disconnect();
         }
@@ -441,11 +443,11 @@ public class KeyGenerator {
     private String extractValue(String json, String key) {
         String searchPattern = "\"" + key + "\":\"";
         int startIndex = json.indexOf(searchPattern);
-        if (startIndex == -1) return "0";
+        if (startIndex == -1) return null;
 
         startIndex += searchPattern.length();
         int endIndex = json.indexOf("\"", startIndex);
-        if (endIndex == -1) return "0";
+        if (endIndex == -1) return null;
 
         return json.substring(startIndex, endIndex);
     }

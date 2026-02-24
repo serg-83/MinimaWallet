@@ -61,7 +61,7 @@
         <item name="boxCornerRadiusBottomStart">14dp</item>
         <item name="boxCornerRadiusTopEnd">14dp</item>
         <item name="boxCornerRadiusTopStart">14dp</item>
-        <item name="boxStrokeColor">@color/primary_color</item>
+        <item name="boxStrokeColor">@color/text_input_stroke_color</item>
         <item name="hintTextColor">@color/primary_color</item>
     </style>
 
@@ -89,7 +89,7 @@
     <style name="TextAppearance.MinimaWallet.PageTitle">
         <item name="android:textSize">22sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/on_surface</item>
+        <item name="android:textColor">@color/white</item>
     </style>
 
     <!-- Balance text -->

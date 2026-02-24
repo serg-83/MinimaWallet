@@ -35,7 +35,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/current_wallet"
-                    android:textColor="#B2DFDB"
+                    android:textColor="@color/on_card_label"
                     android:textSize="13sp"
                     android:letterSpacing="0.06"
                     android:textAllCaps="true" />
@@ -46,7 +46,7 @@
                     android:layout_height="wrap_content"
                     android:text="0 MINIMA"
                     android:textColor="@color/white"
-                    android:textSize="26sp"
+                    android:textSize="28sp"
                     android:textStyle="bold"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="8dp" />
@@ -56,7 +56,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/not_generated"
-                    android:textColor="#B2DFDB"
+                    android:textColor="@color/on_card_label"
                     android:textSize="12sp"
                     android:fontFamily="monospace"
                     android:textIsSelectable="true" />
@@ -89,10 +89,15 @@
                     android:paddingBottom="16dp" />
 
                 <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/recipient_address_layout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    style="@style/Widget.MinimaWallet.TextInputLayout">
+                    style="@style/Widget.MinimaWallet.TextInputLayout"
+                    app:endIconMode="custom"
+                    app:endIconDrawable="@drawable/ic_content_paste"
+                    app:endIconContentDescription="@string/paste_address"
+                    app:endIconTint="@color/primary_color">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/recipient_address_edit"
@@ -100,7 +105,6 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/recipient_address"
                         android:inputType="text"
-                        android:fontFamily="monospace"
                         android:textSize="14sp" />
 
                 </com.google.android.material.textfield.TextInputLayout>

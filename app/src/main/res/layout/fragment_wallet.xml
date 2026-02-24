@@ -45,7 +45,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/balance"
-                    android:textColor="#B2DFDB"
+                    android:textColor="@color/on_card_label"
                     android:textSize="13sp"
                     android:letterSpacing="0.08"
                     android:textAllCaps="true" />
@@ -71,7 +71,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/address"
-                    android:textColor="#B2DFDB"
+                    android:textColor="@color/on_card_label"
                     android:textSize="11sp"
                     android:letterSpacing="0.08"
                     android:textAllCaps="true" />
@@ -82,10 +82,12 @@
                     android:layout_height="wrap_content"
                     android:text="@string/not_generated"
                     android:textColor="@color/white"
-                    android:textSize="13sp"
+                    android:textSize="12sp"
                     android:textIsSelectable="true"
                     android:layout_marginTop="2dp"
-                    android:fontFamily="monospace" />
+                    android:fontFamily="monospace"
+                    android:ellipsize="middle"
+                    android:maxLines="1" />
 
             </LinearLayout>
 
@@ -109,9 +111,11 @@
             android:id="@+id/seed_status_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_status_chip"
+            android:background="@drawable/bg_warning_chip"
             android:text="@string/seed_phrase_not_loaded"
             android:textColor="@color/warning_color"
+            android:drawableStart="@drawable/ic_warning"
+            android:drawablePadding="8dp"
             android:textSize="13sp"
             android:gravity="center"
             android:padding="12dp"
