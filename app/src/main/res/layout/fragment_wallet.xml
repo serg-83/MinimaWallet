@@ -115,18 +115,41 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Status -->
-        <TextView
-            android:id="@+id/progress_text"
+        <!-- Tokens list card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/tokens_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_info_chip"
-            android:text="@string/ready_to_work"
-            android:textColor="@color/info_color"
-            android:textSize="13sp"
-            android:gravity="center"
-            android:padding="12dp"
-            android:layout_marginBottom="20dp" />
+            android:layout_marginBottom="20dp"
+            android:visibility="gone"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/card_stroke"
+            app:cardBackgroundColor="@color/card_background">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/tokens_title"
+                    style="@style/TextAppearance.MinimaWallet.SectionTitle"
+                    android:paddingBottom="12dp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/tokens_recycler"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Seed phrase not loaded warning -->
         <TextView
@@ -166,6 +189,19 @@
                     android:text="@string/wallet_info"
                     style="@style/TextAppearance.MinimaWallet.SectionTitle"
                     android:paddingBottom="12dp" />
+
+                <!-- Status -->
+                <TextView
+                    android:id="@+id/progress_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_info_chip"
+                    android:text="@string/ready_to_work"
+                    android:textColor="@color/info_color"
+                    android:textSize="13sp"
+                    android:gravity="center"
+                    android:padding="12dp"
+                    android:layout_marginBottom="12dp" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
