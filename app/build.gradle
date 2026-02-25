@@ -2,7 +2,7 @@ plugins {
     id 'com.android.application'
 }
 
-// Загрузка параметров подписи из keystore.properties (файл не попадает в git)
+// Load signing parameters from keystore.properties (not committed to git)
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
 if (keystorePropertiesFile.exists()) {
@@ -17,8 +17,8 @@ android {
         applicationId "com.example.minimawallet"
         minSdk 26
         targetSdk 33
-        versionCode 1
-        versionName "1.4"
+        versionCode 5
+        versionName "1.5"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -27,7 +27,7 @@ android {
 
     signingConfigs {
         release {
-            // Параметры берутся из keystore.properties или переменных среды CI
+            // Parameters come from keystore.properties or CI environment variables
             storeFile keystorePropertiesFile.exists()
                     ? file(keystoreProperties['storeFile'])
                     : file(System.getenv('KEYSTORE_FILE') ?: 'release-keystore.jks')
