@@ -123,7 +123,7 @@ public class SecureStorage {
     
     public void clearAllData() {
         try {
-            // Удаляем ключ из KeyStore
+            // Remove encryption key from KeyStore
             if (keyStore != null && keyStore.containsAlias(KEY_ALIAS)) {
                 keyStore.deleteEntry(KEY_ALIAS);
                 Log.d(TAG, "Key deleted from KeyStore");
@@ -132,7 +132,7 @@ public class SecureStorage {
             Log.e(TAG, "Error deleting key from KeyStore", e);
         }
         
-        // Очищаем SharedPreferences
+        // Clear encrypted phrase from SharedPreferences
         sharedPreferences.edit()
             .remove(PHRASE_KEY)
             .remove(IV_KEY)

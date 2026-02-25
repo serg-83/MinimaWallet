@@ -68,7 +68,7 @@ public class KeyGenerator {
 
         currentKeyTask = executor.submit(() -> {
             try {
-                postProgress("Настройка API...");
+                postProgress("Setting up API...");
 
                 if (apiUrlParam != null && !apiUrlParam.isEmpty()) {
                     apiUrl = apiUrlParam;
@@ -81,7 +81,7 @@ public class KeyGenerator {
                     String[] words = BIP39.getNewWordList();
                     seedPhrase = BIP39.convertWordListToString(words);
                     generatedPhrase = seedPhrase;
-                    postProgress("Новая фраза сгенерирована");
+                    postProgress("New phrase generated");
                 }
 
                 if (cancelled.get()) return;
@@ -99,24 +99,21 @@ public class KeyGenerator {
                     });
                 } else {
                     mainHandler.post(() -> {
-                        if (callback != null) callback.onError("Ошибка генерации ключей");
+                        if (callback != null) callback.onError("Key generation error");
                     });
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Key generation error: " + e.getMessage());
                 mainHandler.post(() -> {
-                    if (callback != null) callback.onError("Ошибка генерации ключей");
+                    if (callback != null) callback.onError("Key generation error");
                 });
             }
         });
     }
 
     /**
-     * Создаёт, подписывает и отправляет транзакцию в сеть Minima.
-     * tokenId: "0x00" — Minima, любой другой — пользовательский токен.
-     *
      * Creates, signs and sends a transaction to the Minima network.
-     * tokenId: "0x00" — Minima, any other — custom token.
+     * tokenId "0x00" means Minima; any other value targets a custom token.
      */
     public void sendTransaction(String apiUrlParam, String fromAddress, String toAddress,
                                 String amount, String tokenId, String script, TreeKey treekey) {
@@ -125,7 +122,7 @@ public class KeyGenerator {
 
         currentTxTask = executor.submit(() -> {
             try {
-                postProgress("Подготовка транзакции...");
+                postProgress("Preparing transaction...");
 
                 if (apiUrlParam != null && !apiUrlParam.isEmpty()) {
                     apiUrl = apiUrlParam;
@@ -147,13 +144,13 @@ public class KeyGenerator {
                     });
                 } else {
                     mainHandler.post(() -> {
-                        if (callback != null) callback.onError("Ошибка создания транзакции");
+                        if (callback != null) callback.onError("Transaction creation error");
                     });
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Transaction error: " + e.getMessage());
                 mainHandler.post(() -> {
-                    if (callback != null) callback.onError("Ошибка создания транзакции");
+                    if (callback != null) callback.onError("Transaction creation error");
                 });
             }
         });
@@ -193,7 +190,7 @@ public class KeyGenerator {
 
     private KeyData processAddressNumber(MiniData seed, int addressNumber) {
         try {
-            postProgress("Адрес #" + addressNumber);
+            postProgress("Address #" + addressNumber);
 
             MiniData addressNumberData = new MiniData(BigInteger.valueOf(addressNumber).toByteArray());
             MiniData privseed = Crypto.getInstance().hashObjects(seed, addressNumberData);
@@ -207,12 +204,12 @@ public class KeyGenerator {
 
             if (cancelled.get()) return null;
 
-            postProgress("Проверка баланса...");
+            postProgress("Checking balance...");
             List<TokenBalance> tokens = checkBalance(miniAddress);
 
             if (cancelled.get()) return null;
 
-            // Первый токен (Minima) — основной баланс
+            // First token (Minima) holds the main balance
             String balance = "0";
             if (tokens != null && !tokens.isEmpty()) {
                 balance = tokens.get(0).confirmed;
@@ -281,7 +278,7 @@ public class KeyGenerator {
             }
         } catch (Exception e) {
             Log.e(TAG, "Balance check error: " + e.getMessage());
-            postServerLog("balance address:" + miniAddress, "Ошибка: " + e.getMessage());
+            postServerLog("balance address:" + miniAddress, "Error: " + e.getMessage());
         } finally {
             if (connection != null) connection.disconnect();
         }
@@ -306,7 +303,7 @@ public class KeyGenerator {
 
                 String tokenId = obj.get("tokenid") != null ? obj.get("tokenid").toString() : "";
 
-                // Имя токена и изображение
+                // Resolve token name and optional image
                 String tokenName;
                 String imageData = null;
                 String imageUrl = null;
@@ -321,7 +318,7 @@ public class KeyGenerator {
                     tokenName = (nameObj != null && !nameObj.toString().trim().isEmpty())
                             ? nameObj.toString().trim()
                             : tokenId;
-                    // Извлекаем картинку из поля url
+                    // Extract base64 image from the url field if wrapped in <artimage> tags
                     Object urlObj = tokenObj.get("url");
                     if (urlObj != null) {
                         String url = urlObj.toString();
@@ -351,10 +348,10 @@ public class KeyGenerator {
     private String createAndSignTransactionLocally(String fromAddress, String toAddress,
                                                     String amount, String tokenId, String script, TreeKey treekey) {
         try {
-            postProgress("Создание транзакции...");
+            postProgress("Creating transaction...");
             String unsignedData = createTransaction(fromAddress, toAddress, amount, tokenId, script);
             if (unsignedData == null) {
-                postProgress("Ошибка создания транзакции");
+                postProgress("Transaction creation failed");
                 return null;
             }
 
@@ -362,12 +359,12 @@ public class KeyGenerator {
 
             String signedTransaction = signTransactionLocally(unsignedData, treekey);
             if (signedTransaction != null) {
-                postProgress("Транзакция подписана");
+                postProgress("Transaction signed");
 
                 boolean sent = sendSignedTransaction(signedTransaction);
-                return sent ? "Транзакция успешно отправлена" : null;
+                return sent ? "Transaction sent successfully" : null;
             } else {
-                postProgress("Ошибка подписи");
+                postProgress("Signing failed");
                 return null;
             }
 
@@ -378,13 +375,9 @@ public class KeyGenerator {
     }
 
     /**
-     * Запрашивает неподписанную транзакцию у сервера (команда createfrom).
-     * Для Minima (tokenId=0x00) параметр tokenid не передаётся — он используется по умолчанию.
-     * Для остальных токенов добавляется tokenid:<значение>.
-     *
      * Requests an unsigned transaction from the server (createfrom command).
-     * For Minima (tokenId=0x00) the tokenid parameter is omitted — it is used by default.
-     * For other tokens tokenid:<value> is appended.
+     * For Minima (tokenId=0x00) the tokenid parameter is omitted — server uses it by default.
+     * For other tokens tokenid is appended to the request.
      */
     private String createTransaction(String fromAddress, String toAddress, String amount, String tokenId, String script) {
         if (cancelled.get()) return null;
@@ -393,8 +386,7 @@ public class KeyGenerator {
         requestBody.append("createfrom fromaddress:").append(fromAddress)
                 .append(" address:").append(toAddress)
                 .append(" amount:").append(amount);
-        // 0x00 — токен Minima, используется по умолчанию, tokenid не нужен
-        // 0x00 — Minima token, used by default, tokenid not needed
+        // tokenid 0x00 is Minima — omit it, server uses Minima by default
         if (tokenId != null && !tokenId.isEmpty() && !"0x00".equals(tokenId)) {
             requestBody.append(" tokenid:").append(tokenId);
         }
@@ -449,7 +441,7 @@ public class KeyGenerator {
             }
         } catch (Exception e) {
             Log.e(TAG, "Create transaction error: " + e.getMessage());
-            postServerLog("createfrom amount:" + amount, "Ошибка: " + e.getMessage());
+            postServerLog("createfrom amount:" + amount, "Error: " + e.getMessage());
         } finally {
             if (connection != null) connection.disconnect();
         }
@@ -513,7 +505,7 @@ public class KeyGenerator {
         HttpURLConnection connection = null;
 
         try {
-            postProgress("Отправка в сеть...");
+            postProgress("Broadcasting to network...");
 
             URL url = new URL(apiUrl);
             connection = (HttpURLConnection) url.openConnection();
@@ -541,17 +533,17 @@ public class KeyGenerator {
                     }
                     postServerLog("postfrom", response.toString());
                 }
-                postProgress("Транзакция отправлена в сеть");
+                postProgress("Transaction broadcast to network");
                 return true;
             } else {
                 postServerLog("postfrom", "HTTP " + responseCode);
-                postProgress("Ошибка отправки: код " + responseCode);
+                postProgress("Broadcast failed: code " + responseCode);
                 return false;
             }
 
         } catch (Exception e) {
             Log.e(TAG, "Send transaction error: " + e.getMessage());
-            postServerLog("postfrom", "Ошибка: " + e.getMessage());
+            postServerLog("postfrom", "Error: " + e.getMessage());
             return false;
         } finally {
             if (connection != null) connection.disconnect();
@@ -576,8 +568,8 @@ public class KeyGenerator {
         public String confirmed;
         public String unconfirmed;
         public String sendable;
-        public String imageData; // base64 из <artimage>
-        public String imageUrl;  // обычный URL картинки
+        public String imageData; // base64 image from <artimage> tag
+        public String imageUrl;  // plain image URL (stored but not used for display)
 
         public TokenBalance(String tokenName, String tokenId, String confirmed,
                             String unconfirmed, String sendable, String imageData, String imageUrl) {

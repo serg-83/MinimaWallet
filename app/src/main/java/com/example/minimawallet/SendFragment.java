@@ -43,7 +43,7 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
 
     private boolean isTransactionInProgress = false;
 
-    // Список токенов включая Minima
+    // All available tokens including Minima
     private List<TokenBalance> availableTokens = new ArrayList<>();
     private int selectedTokenIndex = 0;
 
@@ -127,13 +127,8 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
     }
 
     /**
-     * Заполняет выпадающий список всеми доступными токенами из баланса кошелька.
-     * Формат отображения: "Название  [баланс]"
-     * По умолчанию выбирается первый токен (обычно Minima).
-     *
-     * Populates the dropdown with all available tokens from the wallet balance.
-     * Display format: "Name  [balance]"
-     * The first token (usually Minima) is selected by default.
+     * Populates the token dropdown with all available tokens from the wallet balance.
+     * Display format: "Name  [confirmed balance]". First token (usually Minima) is selected by default.
      */
     private void updateTokenDropdown() {
         KeyData currentKeyData = walletViewModel != null ? walletViewModel.getCurrentKeyData() : null;
@@ -144,8 +139,7 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
             availableTokens.addAll(currentKeyData.tokens);
         }
 
-        // Если токены не загружены — показываем Minima с нулевым балансом
-        // If tokens are not loaded — show Minima with zero balance
+        // No tokens loaded yet — show Minima placeholder with zero balance
         if (availableTokens.isEmpty()) {
             availableTokens.add(new TokenBalance("Minima", "0x00", "0", "0", "0", null, null));
         }
@@ -165,7 +159,7 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
 
         if (tokenSelector != null) {
             tokenSelector.setAdapter(adapter);
-            // Выбираем первый токен по умолчанию / Select first token by default
+            // Select first token by default
             if (!displayNames.isEmpty()) {
                 tokenSelector.setText(displayNames.get(0), false);
             }
@@ -175,10 +169,7 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
         updateBalanceForSelectedToken();
     }
 
-    /**
-     * Обновляет суффикс поля суммы именем выбранного токена.
-     * Updates the amount field suffix with the selected token name.
-     */
+    /** Updates the amount field suffix with the selected token name. */
     private void updateAmountSuffix() {
         if (amountLayout == null) return;
         if (selectedTokenIndex >= 0 && selectedTokenIndex < availableTokens.size()) {
@@ -188,10 +179,7 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
         }
     }
 
-    /**
-     * Обновляет отображение баланса для выбранного токена в карточке кошелька.
-     * Updates the balance display for the selected token in the wallet card.
-     */
+    /** Updates the balance display for the selected token in the wallet summary card. */
     private void updateBalanceForSelectedToken() {
         if (currentBalanceText == null) return;
         if (selectedTokenIndex >= 0 && selectedTokenIndex < availableTokens.size()) {

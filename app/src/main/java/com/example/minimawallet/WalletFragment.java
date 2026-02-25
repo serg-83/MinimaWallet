@@ -1,23 +1,35 @@
 package com.example.minimawallet;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Base64;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.minimawallet.KeyGenerator.KeyData;
+import com.example.minimawallet.KeyGenerator.TokenBalance;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textview.MaterialTextView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class WalletFragment extends Fragment implements KeyGenerator.KeyGeneratorCallback {
 
@@ -30,6 +42,9 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
     private MaterialTextView progressText, addressText, balanceText, seedStatusText;
     private MaterialButton generateKeysBtn, refreshBalanceBtn;
     private ProgressBar loadingProgress;
+    private RecyclerView tokensRecycler;
+    private MaterialCardView tokensCard;
+    private TokenAdapter tokenAdapter;
 
     private boolean isFragmentInitialized = false;
 
@@ -104,6 +119,14 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
             refreshBalanceBtn = view.findViewById(R.id.refresh_balance_btn);
             loadingProgress = view.findViewById(R.id.loading_progress);
             seedStatusText = view.findViewById(R.id.seed_status_text);
+            tokensCard = view.findViewById(R.id.tokens_card);
+            tokensRecycler = view.findViewById(R.id.tokens_recycler);
+
+            tokenAdapter = new TokenAdapter();
+            tokensRecycler.setLayoutManager(new LinearLayoutManager(requireContext()));
+            tokensRecycler.setAdapter(tokenAdapter);
+            tokensRecycler.addItemDecoration(
+                    new DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL));
         } catch (Exception e) {
             showToast(getString(R.string.error_ui_initialization));
         }
@@ -148,7 +171,6 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
                 ? sharedPreferences.getString("api_url", "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD")
                 : "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD";
 
-        // Переинициализируем с тем же адресом для обновления баланса
         if (addressNumberEdit != null && !addressNumberEdit.getText().toString().isEmpty()) {
             try {
                 int addressNumber = Integer.parseInt(addressNumberEdit.getText().toString());
@@ -276,6 +298,22 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
             if (balanceText != null) {
                 balanceText.setText(currentKeyData.balance + " MINIMA");
             }
+            // Update token list, excluding Minima which is shown in the balance field
+            if (tokensCard != null && tokenAdapter != null) {
+                List<TokenBalance> tokens = currentKeyData.tokens;
+                List<TokenBalance> filtered = new java.util.ArrayList<>();
+                if (tokens != null) {
+                    for (TokenBalance t : tokens) {
+                        if (!"0x00".equals(t.tokenId)) filtered.add(t);
+                    }
+                }
+                if (!filtered.isEmpty()) {
+                    tokenAdapter.setTokens(filtered);
+                    tokensCard.setVisibility(View.VISIBLE);
+                } else {
+                    tokensCard.setVisibility(View.GONE);
+                }
+            }
         }
     }
 
@@ -305,5 +343,84 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
             keyGenerator = null;
         }
         isFragmentInitialized = false;
+    }
+
+    // --- Adapter ---
+    static class TokenAdapter extends RecyclerView.Adapter<TokenAdapter.VH> {
+
+        private List<TokenBalance> tokens = new ArrayList<>();
+
+        void setTokens(List<TokenBalance> newTokens) {
+            tokens = newTokens;
+            notifyDataSetChanged();
+        }
+
+        @NonNull
+        @Override
+        public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_token, parent, false);
+            return new VH(v);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull VH holder, int position) {
+            TokenBalance t = tokens.get(position);
+            holder.name.setText(t.tokenName);
+            // Hide the id row when it duplicates the name
+            if (t.tokenName.equals(t.tokenId)) {
+                holder.id.setVisibility(android.view.View.GONE);
+            } else {
+                holder.id.setVisibility(android.view.View.VISIBLE);
+                holder.id.setText(t.tokenId);
+            }
+            holder.balance.setText(t.confirmed);
+            // Show token image on click if artimage data is available
+            holder.itemView.setOnClickListener(v -> {
+                if (t.imageData != null && !t.imageData.isEmpty()) {
+                    showTokenImage(v.getContext(), t.tokenName, t.imageData, null);
+                }
+            });
+        }
+
+        private void showTokenImage(Context ctx, String tokenName, String imageData, String imageUrl) {
+            android.widget.ImageView imageView = new android.widget.ImageView(ctx);
+            imageView.setAdjustViewBounds(true);
+            int pad = (int)(16 * ctx.getResources().getDisplayMetrics().density);
+            imageView.setPadding(pad, pad, pad, pad);
+
+            com.google.android.material.dialog.MaterialAlertDialogBuilder dialog =
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(ctx)
+                    .setTitle(tokenName)
+                    .setView(imageView)
+                    .setPositiveButton(android.R.string.ok, null);
+
+            if (imageData != null && !imageData.isEmpty()) {
+                // artimage — base64
+                try {
+                    byte[] bytes = Base64.decode(imageData, Base64.DEFAULT);
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                    if (bitmap != null) {
+                        imageView.setImageBitmap(bitmap);
+                        dialog.show();
+                    }
+                } catch (Exception e) { /* ignore */ }
+            }
+        }
+
+        @Override
+        public int getItemCount() {
+            return tokens.size();
+        }
+
+        static class VH extends RecyclerView.ViewHolder {
+            TextView name, id, balance;
+            VH(@NonNull View v) {
+                super(v);
+                name = v.findViewById(R.id.token_name);
+                id = v.findViewById(R.id.token_id);
+                balance = v.findViewById(R.id.token_balance);
+            }
+        }
     }
 }
