@@ -29,8 +29,12 @@ import org.minima.objects.keys.TreeKey;
 import org.minima.database.userprefs.txndb.TxnRow;
 import org.minima.utils.BIP39;
 import org.minima.utils.Crypto;
+import org.minima.utils.json.JSONArray;
 import org.minima.utils.json.JSONObject;
 import org.minima.utils.json.parser.JSONParser;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class KeyGenerator {
     private static final String TAG = "KeyGenerator";
@@ -107,8 +111,15 @@ public class KeyGenerator {
         });
     }
 
+    /**
+     * Создаёт, подписывает и отправляет транзакцию в сеть Minima.
+     * tokenId: "0x00" — Minima, любой другой — пользовательский токен.
+     *
+     * Creates, signs and sends a transaction to the Minima network.
+     * tokenId: "0x00" — Minima, any other — custom token.
+     */
     public void sendTransaction(String apiUrlParam, String fromAddress, String toAddress,
-                                String amount, String script, TreeKey treekey) {
+                                String amount, String tokenId, String script, TreeKey treekey) {
         cancelCurrentTxTask();
         cancelled.set(false);
 
@@ -126,7 +137,7 @@ public class KeyGenerator {
 
                 if (cancelled.get()) return;
 
-                String result = createAndSignTransactionLocally(fromAddress, toAddress, amount, script, treekey);
+                String result = createAndSignTransactionLocally(fromAddress, toAddress, amount, tokenId, script, treekey);
 
                 if (cancelled.get()) return;
 
@@ -197,9 +208,15 @@ public class KeyGenerator {
             if (cancelled.get()) return null;
 
             postProgress("Проверка баланса...");
-            String balance = checkBalance(miniAddress);
+            List<TokenBalance> tokens = checkBalance(miniAddress);
 
             if (cancelled.get()) return null;
+
+            // Первый токен (Minima) — основной баланс
+            String balance = "0";
+            if (tokens != null && !tokens.isEmpty()) {
+                balance = tokens.get(0).confirmed;
+            }
 
             KeyData keyData = new KeyData();
             keyData.privateKey = privseed.to0xString();
@@ -210,6 +227,7 @@ public class KeyGenerator {
             keyData.currentUses = treekey.getUses();
             keyData.maxUses = treekey.getMaxUses();
             keyData.balance = balance;
+            keyData.tokens = tokens;
             keyData.treeKey = treekey;
 
             return keyData;
@@ -220,8 +238,8 @@ public class KeyGenerator {
         }
     }
 
-    private String checkBalance(String miniAddress) {
-        if (cancelled.get()) return "0";
+    private List<TokenBalance> checkBalance(String miniAddress) {
+        if (cancelled.get()) return null;
 
         String requestBody = "balance megammr:true address:" + miniAddress;
         HttpURLConnection connection = null;
@@ -240,7 +258,7 @@ public class KeyGenerator {
                 os.flush();
             }
 
-            if (cancelled.get()) return "0";
+            if (cancelled.get()) return null;
 
             int responseCode = connection.getResponseCode();
             if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -252,15 +270,11 @@ public class KeyGenerator {
                         response.append(line);
                     }
 
-                    if (cancelled.get()) return "0";
+                    if (cancelled.get()) return null;
 
                     String responseStr = response.toString();
                     postServerLog("balance address:" + miniAddress, responseStr);
-
-                    String confirmed = extractValue(responseStr, "confirmed");
-                    if (confirmed != null) {
-                        return confirmed;
-                    }
+                    return parseTokens(responseStr);
                 }
             } else {
                 postServerLog("balance address:" + miniAddress, "HTTP " + responseCode);
@@ -272,14 +286,73 @@ public class KeyGenerator {
             if (connection != null) connection.disconnect();
         }
 
-        return "0";
+        return null;
+    }
+
+    private List<TokenBalance> parseTokens(String responseStr) {
+        List<TokenBalance> result = new ArrayList<>();
+        try {
+            JSONParser parser = new JSONParser();
+            Object parsed = parser.parse(responseStr);
+            if (!(parsed instanceof JSONObject)) return result;
+
+            Object responseObj = ((JSONObject) parsed).get("response");
+            if (!(responseObj instanceof JSONArray)) return result;
+
+            JSONArray arr = (JSONArray) responseObj;
+            for (Object item : arr) {
+                if (!(item instanceof JSONObject)) continue;
+                JSONObject obj = (JSONObject) item;
+
+                String tokenId = obj.get("tokenid") != null ? obj.get("tokenid").toString() : "";
+
+                // Имя токена и изображение
+                String tokenName;
+                String imageData = null;
+                String imageUrl = null;
+                Object tokenField = obj.get("token");
+                if ("0x00".equals(tokenId)) {
+                    tokenName = "Minima";
+                } else if (tokenField instanceof String) {
+                    tokenName = (String) tokenField;
+                } else if (tokenField instanceof JSONObject) {
+                    JSONObject tokenObj = (JSONObject) tokenField;
+                    Object nameObj = tokenObj.get("name");
+                    tokenName = (nameObj != null && !nameObj.toString().trim().isEmpty())
+                            ? nameObj.toString().trim()
+                            : tokenId;
+                    // Извлекаем картинку из поля url
+                    Object urlObj = tokenObj.get("url");
+                    if (urlObj != null) {
+                        String url = urlObj.toString();
+                        if (url.startsWith("<artimage>")) {
+                            int start = "<artimage>".length();
+                            int end = url.indexOf("</artimage>");
+                            imageData = end > start ? url.substring(start, end) : url.substring(start);
+                        } else if (url.startsWith("http://") || url.startsWith("https://")) {
+                            imageUrl = url;
+                        }
+                    }
+                } else {
+                    tokenName = tokenId;
+                }
+                String confirmed = obj.get("confirmed") != null ? obj.get("confirmed").toString() : "0";
+                String unconfirmed = obj.get("unconfirmed") != null ? obj.get("unconfirmed").toString() : "0";
+                String sendable = obj.get("sendable") != null ? obj.get("sendable").toString() : "0";
+
+                result.add(new TokenBalance(tokenName, tokenId, confirmed, unconfirmed, sendable, imageData, imageUrl));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Token parse error: " + e.getMessage());
+        }
+        return result;
     }
 
     private String createAndSignTransactionLocally(String fromAddress, String toAddress,
-                                                    String amount, String script, TreeKey treekey) {
+                                                    String amount, String tokenId, String script, TreeKey treekey) {
         try {
             postProgress("Создание транзакции...");
-            String unsignedData = createTransaction(fromAddress, toAddress, amount, script);
+            String unsignedData = createTransaction(fromAddress, toAddress, amount, tokenId, script);
             if (unsignedData == null) {
                 postProgress("Ошибка создания транзакции");
                 return null;
@@ -304,13 +377,28 @@ public class KeyGenerator {
         }
     }
 
-    private String createTransaction(String fromAddress, String toAddress, String amount, String script) {
+    /**
+     * Запрашивает неподписанную транзакцию у сервера (команда createfrom).
+     * Для Minima (tokenId=0x00) параметр tokenid не передаётся — он используется по умолчанию.
+     * Для остальных токенов добавляется tokenid:<значение>.
+     *
+     * Requests an unsigned transaction from the server (createfrom command).
+     * For Minima (tokenId=0x00) the tokenid parameter is omitted — it is used by default.
+     * For other tokens tokenid:<value> is appended.
+     */
+    private String createTransaction(String fromAddress, String toAddress, String amount, String tokenId, String script) {
         if (cancelled.get()) return null;
 
-        String requestBody = "createfrom fromaddress:" + fromAddress +
-                " address:" + toAddress +
-                " amount:" + amount +
-                " script:\"" + script + "\"";
+        StringBuilder requestBody = new StringBuilder();
+        requestBody.append("createfrom fromaddress:").append(fromAddress)
+                .append(" address:").append(toAddress)
+                .append(" amount:").append(amount);
+        // 0x00 — токен Minima, используется по умолчанию, tokenid не нужен
+        // 0x00 — Minima token, used by default, tokenid not needed
+        if (tokenId != null && !tokenId.isEmpty() && !"0x00".equals(tokenId)) {
+            requestBody.append(" tokenid:").append(tokenId);
+        }
+        requestBody.append(" script:\"").append(script).append("\"");
 
         HttpURLConnection connection = null;
 
@@ -324,7 +412,7 @@ public class KeyGenerator {
             connection.setReadTimeout(10000);
 
             try (OutputStream os = connection.getOutputStream()) {
-                os.write(requestBody.getBytes());
+                os.write(requestBody.toString().getBytes());
                 os.flush();
             }
 
@@ -482,6 +570,27 @@ public class KeyGenerator {
         return json.substring(startIndex, endIndex);
     }
 
+    public static class TokenBalance {
+        public String tokenName;
+        public String tokenId;
+        public String confirmed;
+        public String unconfirmed;
+        public String sendable;
+        public String imageData; // base64 из <artimage>
+        public String imageUrl;  // обычный URL картинки
+
+        public TokenBalance(String tokenName, String tokenId, String confirmed,
+                            String unconfirmed, String sendable, String imageData, String imageUrl) {
+            this.tokenName = tokenName;
+            this.tokenId = tokenId;
+            this.confirmed = confirmed;
+            this.unconfirmed = unconfirmed;
+            this.sendable = sendable;
+            this.imageData = imageData;
+            this.imageUrl = imageUrl;
+        }
+    }
+
     public static class KeyData {
         public String privateKey;
         public String publicKey;
@@ -491,6 +600,7 @@ public class KeyGenerator {
         public int currentUses;
         public int maxUses;
         public String balance;
+        public List<TokenBalance> tokens;
         public TreeKey treeKey;
         public String generatedPhrase;
     }

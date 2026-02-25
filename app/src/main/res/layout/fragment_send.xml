@@ -88,6 +88,25 @@
                     style="@style/TextAppearance.MinimaWallet.SectionTitle"
                     android:paddingBottom="16dp" />
 
+                <!-- Token selector dropdown -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/token_selector_layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/token_selector"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/select_token"
+                        android:inputType="none"
+                        android:focusable="false"
+                        android:textSize="14sp" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/recipient_address_layout"
                     android:layout_width="match_parent"
@@ -110,6 +129,7 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/amount_layout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="24dp"

@@ -138,4 +138,7 @@
     <string name="log_empty">Log is empty. Make a server request first.</string>
     <string name="log_clear">Clear log</string>
     <string name="log_entries_suffix">entries</string>
+    <string name="tokens_title">All Tokens</string>
+    <string name="select_token">Select token</string>
+    <string name="confirm_send_token_message" formatted="false">Are you sure you want to send %s %s to address:\n\n%s?</string>
 </resources>
