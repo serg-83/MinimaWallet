@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="20dp"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/card_stroke"
+    app:cardBackgroundColor="@color/card_background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Top row: amount + status badge -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:id="@+id/coin_amount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/white" />
+
+            <TextView
+                android:id="@+id/coin_status_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:textSize="11sp"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:background="@drawable/bg_badge_locked" />
+
+        </LinearLayout>
+
+        <!-- Unlock date -->
+        <TextView
+            android:id="@+id/coin_unlock_date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textColor="@color/on_card_label"
+            android:layout_marginBottom="10dp" />
+
+        <!-- Progress bar (hidden when unlocked) -->
+        <ProgressBar
+            android:id="@+id/coin_progress"
+            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginBottom="10dp"
+            android:progressTint="@color/primary_color"
+            android:progressBackgroundTint="@color/card_stroke"
+            android:max="100" />
+
+        <!-- Collect button (visible only when unlocked) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/coin_collect_btn"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:text="@string/future_collect"
+            app:backgroundTint="@color/primary_color"
+            android:textColor="@color/white"
+            app:cornerRadius="12dp"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

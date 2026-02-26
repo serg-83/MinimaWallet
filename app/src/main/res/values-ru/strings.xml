@@ -141,4 +141,30 @@
     <string name="tokens_title">Все токены</string>
     <string name="select_token">Выберите токен</string>
     <string name="confirm_send_token_message" formatted="false">Вы уверены, что хотите отправить %s %s на адрес:\n\n%s?</string>
+
+
+    <!-- FutureCash -->
+    <string name="drawer_future">FutureCash</string>
+    <string name="future_send_title">Заблокировать средства до будущей даты</string>
+    <string name="future_unlock_date_hint">Дата и время разблокировки</string>
+    <string name="future_pick_date">Выбрать дату</string>
+    <string name="future_lock_btn">Заблокировать</string>
+    <string name="future_block_info" formatted="false">Текущий блок: %d → Целевой блок: %d</string>
+    <string name="future_confirm_title">Подтверждение блокировки</string>
+    <string name="future_confirm_msg" formatted="false">Заблокировать %s %s до %s?</string>
+    <string name="future_locked_title">Средства заблокированы!</string>
+    <string name="future_locked_msg">Ваши средства заблокированы. После подтверждения они появятся во вкладке «Мои монеты».</string>
+    <string name="future_block_loading">Загрузка номера блока…</string>
+    <string name="future_date_must_be_future">Выберите дату в будущем</string>
+    <string name="future_no_coins">Заблокированных монет нет</string>
+    <string name="future_load_error">Не удалось загрузить монеты. Проверьте настройки API.</string>
+    <string name="future_badge_locked">Заблокировано</string>
+    <string name="future_badge_unlocked">Разблокировано</string>
+    <string name="future_unlocks_on" formatted="false">Разблокируется: %s</string>
+    <string name="future_unlocks_block" formatted="false">Разблокируется в блоке: %d</string>
+    <string name="future_collect">Забрать</string>
+    <string name="future_collect_confirm_title">Забрать средства</string>
+    <string name="future_collect_confirm_msg" formatted="false">Забрать %s в кошелёк?</string>
+    <string name="future_collected_ok">Средства успешно получены!</string>
+    <string name="future_collect_error">Не удалось получить средства</string>
 </resources>

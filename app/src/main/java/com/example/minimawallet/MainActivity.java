@@ -215,6 +215,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             fragment = new SeedPhraseFragment();
         } else if (itemId == R.id.nav_settings) {
             fragment = new SettingsFragment();
+        } else if (itemId == R.id.nav_future) {
+            fragment = new FutureCashFragment();
         } else if (itemId == R.id.nav_log) {
             fragment = new LogFragment();
         }
@@ -250,6 +252,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     toolbar.setTitle(R.string.drawer_seed_phrase);
                 } else if (menuItemId == R.id.nav_settings) {
                     toolbar.setTitle(R.string.drawer_settings);
+                } else if (menuItemId == R.id.nav_future) {
+                    toolbar.setTitle(R.string.drawer_future);
                 } else if (menuItemId == R.id.nav_log) {
                     toolbar.setTitle(R.string.drawer_log);
                 }

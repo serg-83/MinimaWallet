@@ -112,6 +112,124 @@ public class KeyGenerator {
     }
 
     /**
+     * Fetches the current block number from the Minima API.
+     * Calls FutureSendFragment.onBlockLoaded() via the callback's onProgressUpdate
+     * with a special prefix "BLOCK:" so the fragment can parse it.
+     */
+    public void getBlockNumber(String apiUrlParam) {
+        if (apiUrlParam != null && !apiUrlParam.isEmpty()) apiUrl = apiUrlParam;
+        executor.submit(() -> {
+            try {
+                String response = ApiHelper.post(apiUrl, "block");
+                postServerLog("block", response);
+
+                JSONParser parser = new JSONParser();
+                Object parsed = parser.parse(response);
+                if (parsed instanceof JSONObject) {
+                    Object resp = ((JSONObject) parsed).get("response");
+                    if (resp instanceof JSONObject) {
+                        Object block = ((JSONObject) resp).get("block");
+                        if (block != null) {
+                            long blockNum = Long.parseLong(block.toString());
+                            mainHandler.post(() -> {
+                                if (callback instanceof FutureSendFragment) {
+                                    ((FutureSendFragment) callback).onBlockLoaded(blockNum);
+                                }
+                            });
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "getBlockNumber error: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Sends a FutureCash time-locked transaction.
+     * Uses createfrom with the time-lock script and state JSON containing
+     * the owner public key, target block, and target timestamp.
+     */
+    public void sendFutureTransaction(String apiUrlParam, KeyData kd,
+                                      String amount, String tokenId,
+                                      String script, String stateJson) {
+        cancelCurrentTxTask();
+        cancelled.set(false);
+        if (apiUrlParam != null && !apiUrlParam.isEmpty()) apiUrl = apiUrlParam;
+
+        currentTxTask = executor.submit(() -> {
+            try {
+                postProgress("Creating future transaction...");
+
+                // Build createfrom command with script and state
+                StringBuilder cmd = new StringBuilder();
+                cmd.append("createfrom fromaddress:").append(kd.miniAddress)
+                   .append(" amount:").append(amount)
+                   .append(" script:\"").append(script).append("\"")
+                   .append(" state:").append(stateJson);
+                if (tokenId != null && !tokenId.isEmpty() && !"0x00".equals(tokenId)) {
+                    cmd.append(" tokenid:").append(tokenId);
+                }
+
+                String response = ApiHelper.post(apiUrl, cmd.toString());
+                postServerLog("createfrom future", response);
+
+                JSONParser parser = new JSONParser();
+                Object parsed = parser.parse(response);
+                String unsignedData = null;
+                if (parsed instanceof JSONObject) {
+                    Object resp = ((JSONObject) parsed).get("response");
+                    if (resp instanceof JSONObject) {
+                        unsignedData = (String) ((JSONObject) resp).get("data");
+                    }
+                }
+
+                if (unsignedData == null) {
+                    mainHandler.post(() -> { if (callback != null) callback.onError("No unsigned tx data"); });
+                    return;
+                }
+
+                postProgress("Signing future transaction...");
+                int selectedUse = secureRandom.nextInt(kd.treeKey.getMaxUses());
+                kd.treeKey.setUses(selectedUse);
+                String signed = createAndSignTransactionLocally(
+                        kd.miniAddress, null, amount, tokenId, kd.script, kd.treeKey);
+
+                // For future tx we need the signed form of the future script tx, not normal tx.
+                // Re-sign the unsigned future data directly.
+                String signedFuture = signFutureData(unsignedData, kd.treeKey);
+                if (signedFuture == null) {
+                    mainHandler.post(() -> { if (callback != null) callback.onError("Signing failed"); });
+                    return;
+                }
+
+                postProgress("Broadcasting future transaction...");
+                boolean sent = sendSignedTransaction(signedFuture);
+                if (sent) {
+                    mainHandler.post(() -> { if (callback != null) callback.onTransactionCreated("future_ok"); });
+                } else {
+                    mainHandler.post(() -> { if (callback != null) callback.onError("Broadcast failed"); });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "sendFutureTransaction error: " + e.getMessage());
+                mainHandler.post(() -> { if (callback != null) callback.onError(e.getMessage()); });
+            }
+        });
+    }
+
+    /** Signs raw future transaction data using the tree key. */
+    private String signFutureData(String unsignedData, TreeKey treekey) {
+        try {
+            return signTransactionLocally(unsignedData, treekey) != null
+                    ? signTransactionLocally(unsignedData, treekey)
+                    : null;
+        } catch (Exception e) {
+            Log.e(TAG, "signFutureData error: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Creates, signs and sends a transaction to the Minima network.
      * tokenId "0x00" means Minima; any other value targets a custom token.
      */

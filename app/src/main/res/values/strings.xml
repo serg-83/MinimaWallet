@@ -141,4 +141,29 @@
     <string name="tokens_title">All Tokens</string>
     <string name="select_token">Select token</string>
     <string name="confirm_send_token_message" formatted="false">Are you sure you want to send %s %s to address:\n\n%s?</string>
+
+    <!-- FutureCash -->
+    <string name="drawer_future">FutureCash</string>
+    <string name="future_send_title">Lock Funds Until Future Date</string>
+    <string name="future_unlock_date_hint">Unlock date &amp; time</string>
+    <string name="future_pick_date">Pick date</string>
+    <string name="future_lock_btn">Lock Funds</string>
+    <string name="future_block_info" formatted="false">Current block: %d → Target block: %d</string>
+    <string name="future_confirm_title">Confirm Lock</string>
+    <string name="future_confirm_msg" formatted="false">Lock %s %s until %s?</string>
+    <string name="future_locked_title">Funds Locked!</string>
+    <string name="future_locked_msg">Your funds have been locked. They will appear in "My Coins" once confirmed.</string>
+    <string name="future_block_loading">Loading block number…</string>
+    <string name="future_date_must_be_future">Please select a date in the future</string>
+    <string name="future_no_coins">No locked coins found</string>
+    <string name="future_load_error">Failed to load coins. Check API settings.</string>
+    <string name="future_badge_locked">Locked</string>
+    <string name="future_badge_unlocked">Unlocked</string>
+    <string name="future_unlocks_on" formatted="false">Unlocks: %s</string>
+    <string name="future_unlocks_block" formatted="false">Unlocks at block: %d</string>
+    <string name="future_collect">Collect</string>
+    <string name="future_collect_confirm_title">Collect Funds</string>
+    <string name="future_collect_confirm_msg" formatted="false">Collect %s to your wallet?</string>
+    <string name="future_collected_ok">Funds collected successfully!</string>
+    <string name="future_collect_error">Failed to collect funds</string>
 </resources>
