@@ -146,13 +146,15 @@ public class KeyGenerator {
     }
 
     /**
-     * Sends a FutureCash time-locked transaction using the same flow as the original FutureCash v2:
+     * Sends a FutureCash time-locked transaction.
      *
-     * Step 1: newscript — register the time-lock script and get its address.
-     * Step 2: send amount:X address:<scriptAddress> state:{"0":"<pubkey>","1":"<targetBlock>","2":"<ms>"}
+     * Step 1: newscript — register time-lock script, get its deterministic address.
+     * Step 2: createfrom fromaddress:X address:<scriptAddress> amount:Y state:{...} — get unsigned tx.
+     * Step 3: sign unsigned tx locally with the wallet tree key.
+     * Step 4: postfrom data:<signedHex> mine:true — broadcast to network.
      *
-     * The script address is deterministic and shared; ownership is enforced via state slot 0 (public key).
-     * This matches exactly what FutureCash v2 does with MDS.cmd().
+     * The script address is shared for all FutureCash users;
+     * ownership is enforced via state slot 0 (public key) in the script condition.
      */
     public void sendFutureTransaction(String apiUrlParam, KeyData kd,
                                       String amount, String tokenId,
@@ -163,61 +165,77 @@ public class KeyGenerator {
 
         currentTxTask = executor.submit(() -> {
             try {
-                // Step 1: register script and get its address
+                JSONParser parser = new JSONParser();
+
+                // Step 1: get script address
                 postProgress("Getting script address...");
-                String newscriptCmd = "newscript script:\"" + script + "\" trackall:false";
-                String newscriptResp = ApiHelper.post(apiUrl, newscriptCmd);
+                String newscriptResp = ApiHelper.post(apiUrl,
+                        "newscript script:\"" + script + "\" trackall:false");
                 postServerLog("newscript", newscriptResp);
 
-                JSONParser parser = new JSONParser();
-                Object parsed = parser.parse(newscriptResp);
                 String scriptAddress = null;
-                if (parsed instanceof JSONObject) {
-                    Object resp = ((JSONObject) parsed).get("response");
+                Object parsed1 = parser.parse(newscriptResp);
+                if (parsed1 instanceof JSONObject) {
+                    Object resp = ((JSONObject) parsed1).get("response");
                     if (resp instanceof JSONObject) {
                         Object addr = ((JSONObject) resp).get("address");
                         if (addr != null) scriptAddress = addr.toString();
                     }
                 }
-
                 if (scriptAddress == null || scriptAddress.isEmpty()) {
                     mainHandler.post(() -> { if (callback != null) callback.onError("Could not get script address"); });
                     return;
                 }
-
                 if (cancelled.get()) return;
 
-                // Step 2: send to script address with state
-                postProgress("Sending to future address...");
-                StringBuilder sendCmd = new StringBuilder();
-                sendCmd.append("send amount:").append(amount)
-                       .append(" address:").append(scriptAddress)
-                       .append(" state:").append(stateJson);
+                // Step 2: createfrom — request unsigned transaction
+                postProgress("Creating future transaction...");
+                StringBuilder createCmd = new StringBuilder();
+                createCmd.append("createfrom fromaddress:").append(kd.miniAddress)
+                         .append(" address:").append(scriptAddress)
+                         .append(" amount:").append(amount)
+                         .append(" state:").append(stateJson)
+                         .append(" script:\"").append(kd.script).append("\"");
                 if (tokenId != null && !tokenId.isEmpty() && !"0x00".equals(tokenId)) {
-                    sendCmd.append(" tokenid:").append(tokenId);
+                    createCmd.append(" tokenid:").append(tokenId);
                 }
 
-                String sendResp = ApiHelper.post(apiUrl, sendCmd.toString());
-                postServerLog("send future", sendResp);
+                String createResp = ApiHelper.post(apiUrl, createCmd.toString());
+                postServerLog("createfrom future", createResp);
 
-                Object parsedSend = parser.parse(sendResp);
-                boolean success = false;
-                if (parsedSend instanceof JSONObject) {
-                    Object statusObj = ((JSONObject) parsedSend).get("status");
-                    if (statusObj != null) success = Boolean.parseBoolean(statusObj.toString());
+                String unsignedData = null;
+                Object parsed2 = parser.parse(createResp);
+                if (parsed2 instanceof JSONObject) {
+                    Object resp = ((JSONObject) parsed2).get("response");
+                    if (resp instanceof JSONObject) {
+                        Object data = ((JSONObject) resp).get("data");
+                        if (data != null) unsignedData = data.toString();
+                    }
                 }
+                if (unsignedData == null || unsignedData.isEmpty()) {
+                    mainHandler.post(() -> { if (callback != null) callback.onError("No unsigned tx data from createfrom"); });
+                    return;
+                }
+                if (cancelled.get()) return;
 
-                if (success) {
+                // Step 3: sign locally
+                postProgress("Signing future transaction...");
+                int selectedUse = secureRandom.nextInt(kd.treeKey.getMaxUses());
+                kd.treeKey.setUses(selectedUse);
+                String signedHex = signTransactionLocally(unsignedData, kd.treeKey);
+                if (signedHex == null) {
+                    mainHandler.post(() -> { if (callback != null) callback.onError("Signing failed"); });
+                    return;
+                }
+                if (cancelled.get()) return;
+
+                // Step 4: postfrom — broadcast signed transaction
+                postProgress("Broadcasting future transaction...");
+                boolean sent = sendSignedTransaction(signedHex);
+                if (sent) {
                     mainHandler.post(() -> { if (callback != null) callback.onTransactionCreated("future_ok"); });
                 } else {
-                    // Extract error message if present
-                    String errMsg = "Send failed";
-                    if (parsedSend instanceof JSONObject) {
-                        Object errObj = ((JSONObject) parsedSend).get("error");
-                        if (errObj != null) errMsg = errObj.toString();
-                    }
-                    final String finalErr = errMsg;
-                    mainHandler.post(() -> { if (callback != null) callback.onError(finalErr); });
+                    mainHandler.post(() -> { if (callback != null) callback.onError("Broadcast failed"); });
                 }
 
             } catch (Exception e) {
