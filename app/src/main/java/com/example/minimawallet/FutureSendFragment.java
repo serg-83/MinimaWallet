@@ -50,9 +50,9 @@ public class FutureSendFragment extends Fragment implements KeyGenerator.KeyGene
     // ~50 seconds per Minima block
     private static final long BLOCK_TIME_MS = 50_000L;
 
-    // Script that locks funds until a target block
+    // Exact script from FutureCash v2 — spacing matters as it affects the derived script address
     private static final String FUTURE_SCRIPT =
-            "LET owner=PREVSTATE(0) LET time=PREVSTATE(1) RETURN SIGNEDBY(owner) AND @BLOCK GTE time";
+            "LET owner = PREVSTATE ( 0 ) LET time = PREVSTATE ( 1 ) RETURN SIGNEDBY ( owner ) AND @BLOCK GTE time";
 
     private WalletViewModel walletViewModel;
     private SharedPreferences sharedPreferences;
@@ -269,15 +269,18 @@ public class FutureSendFragment extends Fragment implements KeyGenerator.KeyGene
         }
 
         long deltaMs = selectedDateTime.getTimeInMillis() - System.currentTimeMillis();
+        // floor() like the original FutureCash v2 to avoid fractional block numbers
         long targetBlock = currentBlock + (deltaMs / BLOCK_TIME_MS);
         long targetMs = selectedDateTime.getTimeInMillis();
 
-        // Build time-lock script address
-        // State: 0 = owner public key, 1 = target block, 2 = target timestamp (display only)
+        // State slots match FutureCash v2 exactly:
+        // 0 = owner public key (for SIGNEDBY check)
+        // 1 = target block (for @BLOCK GTE check)
+        // 2 = target timestamp ms (display only, not enforced by script)
         String script = FUTURE_SCRIPT;
-        String stateJson = "{\"0\":\"" + kd.publicKey + "\","
-                + "\"1\":\"" + targetBlock + "\","
-                + "\"2\":\"" + targetMs + "\"}";
+        String stateJson = "{\"0\":\"" + kd.publicKey + "\", "
+                + "\"1\":\"" + targetBlock + "\", "
+                + "\"2\": \"" + targetMs + "\"}";
 
         String apiUrl = sharedPreferences.getString("api_url",
                 "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD");

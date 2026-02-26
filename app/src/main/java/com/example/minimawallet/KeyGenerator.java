@@ -146,9 +146,13 @@ public class KeyGenerator {
     }
 
     /**
-     * Sends a FutureCash time-locked transaction.
-     * Uses createfrom with the time-lock script and state JSON containing
-     * the owner public key, target block, and target timestamp.
+     * Sends a FutureCash time-locked transaction using the same flow as the original FutureCash v2:
+     *
+     * Step 1: newscript — register the time-lock script and get its address.
+     * Step 2: send amount:X address:<scriptAddress> state:{"0":"<pubkey>","1":"<targetBlock>","2":"<ms>"}
+     *
+     * The script address is deterministic and shared; ownership is enforced via state slot 0 (public key).
+     * This matches exactly what FutureCash v2 does with MDS.cmd().
      */
     public void sendFutureTransaction(String apiUrlParam, KeyData kd,
                                       String amount, String tokenId,
@@ -159,74 +163,68 @@ public class KeyGenerator {
 
         currentTxTask = executor.submit(() -> {
             try {
-                postProgress("Creating future transaction...");
-
-                // Build createfrom command with script and state
-                StringBuilder cmd = new StringBuilder();
-                cmd.append("createfrom fromaddress:").append(kd.miniAddress)
-                   .append(" amount:").append(amount)
-                   .append(" script:\"").append(script).append("\"")
-                   .append(" state:").append(stateJson);
-                if (tokenId != null && !tokenId.isEmpty() && !"0x00".equals(tokenId)) {
-                    cmd.append(" tokenid:").append(tokenId);
-                }
-
-                String response = ApiHelper.post(apiUrl, cmd.toString());
-                postServerLog("createfrom future", response);
+                // Step 1: register script and get its address
+                postProgress("Getting script address...");
+                String newscriptCmd = "newscript script:\"" + script + "\" trackall:false";
+                String newscriptResp = ApiHelper.post(apiUrl, newscriptCmd);
+                postServerLog("newscript", newscriptResp);
 
                 JSONParser parser = new JSONParser();
-                Object parsed = parser.parse(response);
-                String unsignedData = null;
+                Object parsed = parser.parse(newscriptResp);
+                String scriptAddress = null;
                 if (parsed instanceof JSONObject) {
                     Object resp = ((JSONObject) parsed).get("response");
                     if (resp instanceof JSONObject) {
-                        unsignedData = (String) ((JSONObject) resp).get("data");
+                        Object addr = ((JSONObject) resp).get("address");
+                        if (addr != null) scriptAddress = addr.toString();
                     }
                 }
 
-                if (unsignedData == null) {
-                    mainHandler.post(() -> { if (callback != null) callback.onError("No unsigned tx data"); });
+                if (scriptAddress == null || scriptAddress.isEmpty()) {
+                    mainHandler.post(() -> { if (callback != null) callback.onError("Could not get script address"); });
                     return;
                 }
 
-                postProgress("Signing future transaction...");
-                int selectedUse = secureRandom.nextInt(kd.treeKey.getMaxUses());
-                kd.treeKey.setUses(selectedUse);
-                String signed = createAndSignTransactionLocally(
-                        kd.miniAddress, null, amount, tokenId, kd.script, kd.treeKey);
+                if (cancelled.get()) return;
 
-                // For future tx we need the signed form of the future script tx, not normal tx.
-                // Re-sign the unsigned future data directly.
-                String signedFuture = signFutureData(unsignedData, kd.treeKey);
-                if (signedFuture == null) {
-                    mainHandler.post(() -> { if (callback != null) callback.onError("Signing failed"); });
-                    return;
+                // Step 2: send to script address with state
+                postProgress("Sending to future address...");
+                StringBuilder sendCmd = new StringBuilder();
+                sendCmd.append("send amount:").append(amount)
+                       .append(" address:").append(scriptAddress)
+                       .append(" state:").append(stateJson);
+                if (tokenId != null && !tokenId.isEmpty() && !"0x00".equals(tokenId)) {
+                    sendCmd.append(" tokenid:").append(tokenId);
                 }
 
-                postProgress("Broadcasting future transaction...");
-                boolean sent = sendSignedTransaction(signedFuture);
-                if (sent) {
+                String sendResp = ApiHelper.post(apiUrl, sendCmd.toString());
+                postServerLog("send future", sendResp);
+
+                Object parsedSend = parser.parse(sendResp);
+                boolean success = false;
+                if (parsedSend instanceof JSONObject) {
+                    Object statusObj = ((JSONObject) parsedSend).get("status");
+                    if (statusObj != null) success = Boolean.parseBoolean(statusObj.toString());
+                }
+
+                if (success) {
                     mainHandler.post(() -> { if (callback != null) callback.onTransactionCreated("future_ok"); });
                 } else {
-                    mainHandler.post(() -> { if (callback != null) callback.onError("Broadcast failed"); });
+                    // Extract error message if present
+                    String errMsg = "Send failed";
+                    if (parsedSend instanceof JSONObject) {
+                        Object errObj = ((JSONObject) parsedSend).get("error");
+                        if (errObj != null) errMsg = errObj.toString();
+                    }
+                    final String finalErr = errMsg;
+                    mainHandler.post(() -> { if (callback != null) callback.onError(finalErr); });
                 }
+
             } catch (Exception e) {
                 Log.e(TAG, "sendFutureTransaction error: " + e.getMessage());
                 mainHandler.post(() -> { if (callback != null) callback.onError(e.getMessage()); });
             }
         });
-    }
-
-    /** Signs raw future transaction data using the tree key. */
-    private String signFutureData(String unsignedData, TreeKey treekey) {
-        try {
-            return signTransactionLocally(unsignedData, treekey) != null
-                    ? signTransactionLocally(unsignedData, treekey)
-                    : null;
-        } catch (Exception e) {
-            Log.e(TAG, "signFutureData error: " + e.getMessage());
-            return null;
-        }
     }
 
     /**
