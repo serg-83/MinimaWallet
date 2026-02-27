@@ -20,10 +20,12 @@ import com.google.android.material.textfield.TextInputEditText;
 public class SettingsFragment extends Fragment {
 
     private static final String DEFAULT_API_URL = "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD";
+    private static final String DEFAULT_EXPLORER_URL = "https://explorer.minima.global/search?q=";
 
     private SecureStorage secureStorage;
 
     private TextInputEditText apiUrlEdit;
+    private TextInputEditText explorerUrlEdit;
     private RadioGroup languageRadioGroup;
     private MaterialButton clearDataBtn;
 
@@ -56,6 +58,7 @@ public class SettingsFragment extends Fragment {
 
     private void initializeViews(View view) {
         apiUrlEdit = view.findViewById(R.id.api_url_edit);
+        explorerUrlEdit = view.findViewById(R.id.explorer_url_edit);
         languageRadioGroup = view.findViewById(R.id.language_radio_group);
         clearDataBtn = view.findViewById(R.id.clear_data_btn);
     }
@@ -82,16 +85,21 @@ public class SettingsFragment extends Fragment {
         });
 
         apiUrlEdit.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                saveApiUrlSetting();
-            }
+            if (!hasFocus) saveApiUrlSetting();
+        });
+        explorerUrlEdit.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) saveExplorerUrlSetting();
         });
     }
 
     private void loadSavedSettings() {
         String savedApiUrl = sharedPreferences.getString("api_url", DEFAULT_API_URL);
         if (apiUrlEdit != null) {
-            apiUrlEdit.setText(savedApiUrl);
+            apiUrlEdit.setText(savedApiUrl.equals(DEFAULT_API_URL) ? "" : savedApiUrl);
+        }
+        String savedExplorerUrl = sharedPreferences.getString("explorer_url", DEFAULT_EXPLORER_URL);
+        if (explorerUrlEdit != null) {
+            explorerUrlEdit.setText(savedExplorerUrl.equals(DEFAULT_EXPLORER_URL) ? "" : savedExplorerUrl);
         }
 
         String savedLanguage = sharedPreferences.getString("app_language", "ru");
@@ -113,13 +121,29 @@ public class SettingsFragment extends Fragment {
     private void saveApiUrlSetting() {
         if (apiUrlEdit != null) {
             String apiUrl = apiUrlEdit.getText().toString().trim();
-            if (!apiUrl.isEmpty()) {
-                if (apiUrl.startsWith("http://") || apiUrl.startsWith("https://")) {
-                    sharedPreferences.edit().putString("api_url", apiUrl).apply();
-                    Toast.makeText(requireContext(), R.string.settings_saved, Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(requireContext(), R.string.url_validation_error, Toast.LENGTH_SHORT).show();
-                }
+            if (apiUrl.isEmpty()) {
+                sharedPreferences.edit().putString("api_url", DEFAULT_API_URL).apply();
+                Toast.makeText(requireContext(), R.string.settings_saved, Toast.LENGTH_SHORT).show();
+            } else if (apiUrl.startsWith("http://") || apiUrl.startsWith("https://")) {
+                sharedPreferences.edit().putString("api_url", apiUrl).apply();
+                Toast.makeText(requireContext(), R.string.settings_saved, Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(requireContext(), R.string.url_validation_error, Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void saveExplorerUrlSetting() {
+        if (explorerUrlEdit != null) {
+            String url = explorerUrlEdit.getText().toString().trim();
+            if (url.isEmpty()) {
+                sharedPreferences.edit().putString("explorer_url", DEFAULT_EXPLORER_URL).apply();
+                Toast.makeText(requireContext(), R.string.settings_saved, Toast.LENGTH_SHORT).show();
+            } else if (url.startsWith("http://") || url.startsWith("https://")) {
+                sharedPreferences.edit().putString("explorer_url", url).apply();
+                Toast.makeText(requireContext(), R.string.settings_saved, Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(requireContext(), R.string.url_validation_error, Toast.LENGTH_SHORT).show();
             }
         }
     }

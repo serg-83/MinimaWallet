@@ -148,13 +148,15 @@ public class KeyGenerator {
     /**
      * Sends a FutureCash time-locked transaction.
      *
-     * Step 1: newscript — register time-lock script, get its deterministic address.
-     * Step 2: createfrom fromaddress:X address:<scriptAddress> amount:Y state:{...} — get unsigned tx.
-     * Step 3: sign unsigned tx locally with the wallet tree key.
-     * Step 4: postfrom data:<signedHex> mine:true — broadcast to network.
+     * Step 1 (1 API call): newscript — get deterministic script address.
+     * Step 2 (1 API call): build unsigned tx on server —
+     *     txncreate → txnaddamount → txnstate(×3) → txnscript → txnmmr → txnexport → txndelete
+     *     txnaddamount automatically selects coins and adds change output.
+     * Step 3: sign the exported hex locally with the tree key.
+     * Step 4 (1 API call): postfrom data:<signedHex> — broadcast signed tx.
      *
-     * The script address is shared for all FutureCash users;
-     * ownership is enforced via state slot 0 (public key) in the script condition.
+     * Total: 3 API calls. createfrom is not used because it does not
+     * support the state parameter required for the time-lock script.
      */
     public void sendFutureTransaction(String apiUrlParam, KeyData kd,
                                       String amount, String tokenId,
@@ -163,11 +165,35 @@ public class KeyGenerator {
         cancelled.set(false);
         if (apiUrlParam != null && !apiUrlParam.isEmpty()) apiUrl = apiUrlParam;
 
+        // Parse state values from stateJson: {"1":"<block>","2":"<address>","3":"<ms>","4":"<coinage>"}
+        final String targetBlock;
+        final String recipientAddress;
+        final String targetMs;
+        final String targetCoinage;
+        try {
+            JSONParser preParser = new JSONParser();
+            Object pre = preParser.parse(stateJson);
+            if (pre instanceof JSONObject) {
+                JSONObject jo = (JSONObject) pre;
+                targetBlock      = jo.get("1").toString();
+                recipientAddress = jo.get("2").toString();
+                targetMs         = jo.get("3").toString();
+                targetCoinage    = jo.get("4").toString();
+            } else {
+                mainHandler.post(() -> { if (callback != null) callback.onError("Invalid stateJson"); });
+                return;
+            }
+        } catch (Exception e) {
+            mainHandler.post(() -> { if (callback != null) callback.onError("State parse error: " + e.getMessage()); });
+            return;
+        }
+
         currentTxTask = executor.submit(() -> {
             try {
                 JSONParser parser = new JSONParser();
+                String tid = (tokenId != null && !tokenId.isEmpty()) ? tokenId : "0x00";
 
-                // Step 1: get script address
+                // Step 1: register script, get its deterministic address
                 postProgress("Getting script address...");
                 String newscriptResp = ApiHelper.post(apiUrl,
                         "newscript script:\"" + script + "\" trackall:false");
@@ -188,54 +214,81 @@ public class KeyGenerator {
                 }
                 if (cancelled.get()) return;
 
-                // Step 2: createfrom — request unsigned transaction
-                postProgress("Creating future transaction...");
-                StringBuilder createCmd = new StringBuilder();
-                createCmd.append("createfrom fromaddress:").append(kd.miniAddress)
-                         .append(" address:").append(scriptAddress)
-                         .append(" amount:").append(amount)
-                         .append(" state:").append(stateJson)
-                         .append(" script:\"").append(kd.script).append("\"");
-                if (tokenId != null && !tokenId.isEmpty() && !"0x00".equals(tokenId)) {
-                    createCmd.append(" tokenid:").append(tokenId);
-                }
+                // Step 2: build unsigned transaction on server and export as hex
+                // txnaddamount selects coins automatically and adds change output
+                postProgress("Building unsigned transaction...");
+                String txId = "future_" + System.currentTimeMillis();
+                String addressScript = "RETURN SIGNEDBY(" + kd.treeKey.getPublicKey().to0xString() + ")";
+                String buildCmds =
+                    "txncreate id:" + txId + ";" +
+                    "txnaddamount id:" + txId +
+                        " fromaddress:" + kd.miniAddress +
+                        " address:" + scriptAddress +
+                        " amount:" + amount +
+                        " tokenid:" + tid + ";" +
+                    "txnstate id:" + txId + " port:1 value:" + targetBlock + ";" +
+                    "txnstate id:" + txId + " port:2 value:" + recipientAddress + ";" +
+                    "txnstate id:" + txId + " port:3 value:" + targetMs + ";" +
+                    "txnstate id:" + txId + " port:4 value:" + targetCoinage + ";" +
+                    "txnscript id:" + txId + " scripts:{\"" + addressScript + "\":\"\"};" +
+                    "txnmmr id:" + txId + ";" +
+                    "txnexport id:" + txId + ";" +
+                    "txndelete id:" + txId;
 
-                String createResp = ApiHelper.post(apiUrl, createCmd.toString());
-                postServerLog("createfrom future", createResp);
+                String buildResp = ApiHelper.post(apiUrl, buildCmds);
+                postServerLog("future build", buildResp);
 
-                String unsignedData = null;
-                Object parsed2 = parser.parse(createResp);
-                if (parsed2 instanceof JSONObject) {
-                    Object resp = ((JSONObject) parsed2).get("response");
-                    if (resp instanceof JSONObject) {
-                        Object data = ((JSONObject) resp).get("data");
-                        if (data != null) unsignedData = data.toString();
+                // Extract hex data from the txnexport response (last successful item)
+                String unsignedHex = null;
+                Object parsed2 = parser.parse(buildResp);
+                if (parsed2 instanceof JSONArray) {
+                    JSONArray arr = (JSONArray) parsed2;
+                    // txnexport is 8th command (index 7); find it by response.data
+                    for (Object item : arr) {
+                        if (!(item instanceof JSONObject)) continue;
+                        JSONObject jo = (JSONObject) item;
+                        Object resp = jo.get("response");
+                        if (resp instanceof JSONObject) {
+                            Object data = ((JSONObject) resp).get("data");
+                            if (data != null && !data.toString().isEmpty()) {
+                                unsignedHex = data.toString();
+                            }
+                        }
                     }
                 }
-                if (unsignedData == null || unsignedData.isEmpty()) {
-                    mainHandler.post(() -> { if (callback != null) callback.onError("No unsigned tx data from createfrom"); });
+                if (unsignedHex == null || unsignedHex.isEmpty()) {
+                    mainHandler.post(() -> { if (callback != null) callback.onError("No unsigned tx data from server"); });
                     return;
                 }
                 if (cancelled.get()) return;
 
-                // Step 3: sign locally
-                postProgress("Signing future transaction...");
+                // Step 3: sign locally with tree key
+                postProgress("Signing transaction...");
                 int selectedUse = secureRandom.nextInt(kd.treeKey.getMaxUses());
                 kd.treeKey.setUses(selectedUse);
-                String signedHex = signTransactionLocally(unsignedData, kd.treeKey);
+                String signedHex = signTransactionLocally(unsignedHex, kd.treeKey);
                 if (signedHex == null) {
-                    mainHandler.post(() -> { if (callback != null) callback.onError("Signing failed"); });
+                    mainHandler.post(() -> { if (callback != null) callback.onError("Local signing failed"); });
                     return;
                 }
                 if (cancelled.get()) return;
 
-                // Step 4: postfrom — broadcast signed transaction
-                postProgress("Broadcasting future transaction...");
-                boolean sent = sendSignedTransaction(signedHex);
-                if (sent) {
+                // Step 4: broadcast signed transaction via postfrom
+                postProgress("Broadcasting transaction...");
+                String postResp = ApiHelper.post(apiUrl, "postfrom data:" + signedHex);
+                postServerLog("postfrom future", postResp);
+
+                boolean success = false;
+                Object parsed3 = parser.parse(postResp);
+                if (parsed3 instanceof JSONObject) {
+                    Object st = ((JSONObject) parsed3).get("status");
+                    success = "true".equals(String.valueOf(st));
+                }
+
+                if (success) {
                     mainHandler.post(() -> { if (callback != null) callback.onTransactionCreated("future_ok"); });
                 } else {
-                    mainHandler.post(() -> { if (callback != null) callback.onError("Broadcast failed"); });
+                    mainHandler.post(() -> { if (callback != null) callback.onError("Broadcast failed: " + postResp); });
                 }
 
             } catch (Exception e) {

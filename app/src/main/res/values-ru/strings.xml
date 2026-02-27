@@ -53,6 +53,7 @@
     <string name="api_settings">Настройки API</string>
     <string name="api_url">URL API</string>
     <string name="api_url_hint">Полный URL API (например: https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD)</string>
+    <string name="explorer_url_hint">URL Explorer (например: https://explorer.minima.global/search?q=)</string>
     <string name="language_settings">Настройки языка</string>
     <string name="select_language">Выберите язык</string>
     <string name="russian">Русский</string>
@@ -133,6 +134,7 @@
     <string name="close_drawer">Закрыть меню</string>
     <string name="paste_address">Вставить адрес</string>
     <string name="drawer_log">Лог сервера</string>
+    <string name="drawer_explorer">Эксплорер</string>
     <string name="refresh_balance">Обновить баланс</string>
     <string name="log_title">Лог сервера</string>
     <string name="log_empty">Логи пусты. Выполните запрос к серверу.</string>

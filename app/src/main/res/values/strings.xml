@@ -53,6 +53,7 @@
     <string name="api_settings">API Settings</string>
     <string name="api_url">API URL</string>
     <string name="api_url_hint">Full API URL (e.g.: https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD)</string>
+    <string name="explorer_url_hint">Explorer URL (e.g.: https://explorer.minima.global/search?q=)</string>
     <string name="language_settings">Language Settings</string>
     <string name="select_language">Select Language</string>
     <string name="russian">Russian</string>
@@ -133,6 +134,7 @@
     <string name="close_drawer">Close menu</string>
     <string name="paste_address">Paste address</string>
     <string name="drawer_log">Server Log</string>
+    <string name="drawer_explorer">Explorer</string>
     <string name="refresh_balance">Refresh balance</string>
     <string name="log_title">Server Log</string>
     <string name="log_empty">Log is empty. Make a server request first.</string>

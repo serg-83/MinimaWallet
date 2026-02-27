@@ -51,6 +51,7 @@
         android:textColor="@color/primary_color"
         android:textSize="14sp"
         android:textStyle="bold"
-        android:gravity="end" />
+        android:gravity="end"
+        android:textIsSelectable="true" />
 
 </LinearLayout>

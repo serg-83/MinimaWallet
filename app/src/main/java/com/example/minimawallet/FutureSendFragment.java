@@ -40,19 +40,21 @@ import java.util.Locale;
  * 2. App calculates target block: currentBlock + (deltaMs / 50_000).
  * 3. Sends createfrom with the time-lock script stored as state.
  *
- * Time-lock script (same as FutureCash v2):
- *   LET owner = PREVSTATE(0)
- *   LET time  = PREVSTATE(1)
- *   RETURN SIGNEDBY(owner) AND @BLOCK GTE time
+ * Time-lock script:
+ *   RETURN (@BLOCK GTE PREVSTATE(1) OR @COINAGE GTE PREVSTATE(4)) AND VERIFYOUT(@INPUT PREVSTATE(2) @AMOUNT @TOKENID FALSE)
+ *
+ * State slots:
+ *   1 = target block
+ *   2 = recipient address (for VERIFYOUT)
+ *   4 = coinage threshold
  */
 public class FutureSendFragment extends Fragment implements KeyGenerator.KeyGeneratorCallback {
 
     // ~50 seconds per Minima block
     private static final long BLOCK_TIME_MS = 50_000L;
 
-    // Exact script from FutureCash v2 — spacing matters as it affects the derived script address
     private static final String FUTURE_SCRIPT =
-            "LET owner = PREVSTATE ( 0 ) LET time = PREVSTATE ( 1 ) RETURN SIGNEDBY ( owner ) AND @BLOCK GTE time";
+            "RETURN (@BLOCK GTE PREVSTATE(1) OR @COINAGE GTE PREVSTATE(4)) AND VERIFYOUT(@INPUT PREVSTATE(2) @AMOUNT @TOKENID FALSE)";
 
     private WalletViewModel walletViewModel;
     private SharedPreferences sharedPreferences;
@@ -269,18 +271,22 @@ public class FutureSendFragment extends Fragment implements KeyGenerator.KeyGene
         }
 
         long deltaMs = selectedDateTime.getTimeInMillis() - System.currentTimeMillis();
-        // floor() like the original FutureCash v2 to avoid fractional block numbers
-        long targetBlock = currentBlock + (deltaMs / BLOCK_TIME_MS);
+        long deltaBlocks = deltaMs / BLOCK_TIME_MS;
+        long targetBlock = currentBlock + deltaBlocks;
         long targetMs = selectedDateTime.getTimeInMillis();
+        // coinage = targetBlock - currentBlock (exact delta, same as original fcash)
+        long coinage = deltaBlocks;
 
-        // State slots match FutureCash v2 exactly:
-        // 0 = owner public key (for SIGNEDBY check)
+        // State slots:
         // 1 = target block (for @BLOCK GTE check)
-        // 2 = target timestamp ms (display only, not enforced by script)
+        // 2 = recipient address (for VERIFYOUT)
+        // 3 = timestamp ms (display only)
+        // 4 = coinage threshold in blocks (for @COINAGE GTE check)
         String script = FUTURE_SCRIPT;
-        String stateJson = "{\"0\":\"" + kd.publicKey + "\", "
-                + "\"1\":\"" + targetBlock + "\", "
-                + "\"2\": \"" + targetMs + "\"}";
+        String stateJson = "{\"1\":\"" + targetBlock + "\", "
+                + "\"2\":\"" + kd.address + "\", "
+                + "\"3\":\"" + targetMs + "\", "
+                + "\"4\":\"" + coinage + "\"}";
 
         String apiUrl = sharedPreferences.getString("api_url",
                 "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD");

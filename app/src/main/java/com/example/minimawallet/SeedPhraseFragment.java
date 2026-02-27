@@ -349,14 +349,11 @@ public class SeedPhraseFragment extends Fragment {
                 if (!phrase.isEmpty()) {
                     boolean saved = secureStorage.savePhrase(phrase);
                     if (saved) {
-                        // Update ViewModel with saved phrase
                         walletViewModel.setSeedPhrase(phrase);
-
                         showToast(getString(R.string.phrase_saved));
-                        if (progressText != null) {
-                            progressText.setText(getString(R.string.phrase_saved));
+                        if (getActivity() instanceof MainActivity) {
+                            ((MainActivity) getActivity()).navigateTo(new WalletFragment(), R.id.nav_wallet);
                         }
-                        checkSavedPhrase();
                     } else {
                         showToast(getString(R.string.phrase_save_error));
                     }

@@ -44,9 +44,10 @@ public class FutureCoinsFragment extends Fragment {
     private static final long BLOCK_TIME_MS = 50_000L;
 
     // State slot indices matching the time-lock script
-    private static final int STATE_OWNER_KEY = 0;
     private static final int STATE_TARGET_BLOCK = 1;
-    private static final int STATE_TARGET_MS = 2;
+    private static final int STATE_TARGET_ADDRESS = 2;
+    private static final int STATE_TARGET_MS = 3;
+    private static final int STATE_COINAGE = 4;
 
     private WalletViewModel walletViewModel;
     private SharedPreferences sharedPreferences;
@@ -102,13 +103,50 @@ public class FutureCoinsFragment extends Fragment {
 
         executor.execute(() -> {
             try {
-                // 1. Get current block
-                String blockResp = ApiHelper.post(apiUrl, "block");
-                currentBlock = parseBlock(blockResp);
+                // 1. Get current block + script address in one batch
+                String batchResp = ApiHelper.post(apiUrl,
+                        "block;" +
+                        "newscript script:\"RETURN (@BLOCK GTE PREVSTATE(1) OR @COINAGE GTE PREVSTATE(4)) AND VERIFYOUT(@INPUT PREVSTATE(2) @AMOUNT @TOKENID FALSE)\" trackall:false");
 
-                // 2. Get locked coins
-                String coinsResp = ApiHelper.post(apiUrl, "coins relevant:true");
+                String scriptAddress = parseScriptAddress(batchResp);
+                currentBlock = parseBlockFromBatch(batchResp);
+
+                // 2. Get locked coins filtered by script address + state port2 (recipient) + megammr
+                KeyGenerator.KeyData kd = walletViewModel != null ? walletViewModel.getCurrentKeyData() : null;
+                String userHexAddr = kd != null ? kd.address : null;
+                if (userHexAddr == null || userHexAddr.isEmpty()) {
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            if (!isAdded()) return;
+                            if (loadingBar != null) loadingBar.setVisibility(View.GONE);
+                            if (emptyText != null) {
+                                emptyText.setVisibility(View.VISIBLE);
+                                emptyText.setText(R.string.generate_keys_first);
+                            }
+                        });
+                    }
+                    return;
+                }
+                if (scriptAddress == null || scriptAddress.isEmpty()) {
+                    android.util.Log.e("FutureCoins", "scriptAddress is null, aborting coins load");
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            if (!isAdded()) return;
+                            if (loadingBar != null) loadingBar.setVisibility(View.GONE);
+                            if (emptyText != null) emptyText.setVisibility(View.VISIBLE);
+                        });
+                    }
+                    return;
+                }
+                String coinsCmd = "coins address:" + scriptAddress + " state:" + userHexAddr + " megammr:true";
+                final String coinsCmdFinal = coinsCmd;
+                if (getActivity() != null) getActivity().runOnUiThread(() -> { if (walletViewModel != null) walletViewModel.addServerLog("coins >> " + coinsCmdFinal); });
+                String coinsResp = ApiHelper.post(apiUrl, coinsCmd);
+                final String coinsRespFinal = coinsResp;
+                if (getActivity() != null) getActivity().runOnUiThread(() -> { if (walletViewModel != null) walletViewModel.addServerLog("coins << " + coinsRespFinal); });
                 List<FutureCoin> parsed = parseCoins(coinsResp, currentBlock);
+                final int parsedCount = parsed.size();
+                if (getActivity() != null) getActivity().runOnUiThread(() -> { if (walletViewModel != null) walletViewModel.addServerLog("coins parsed: " + parsedCount); });
 
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
@@ -138,6 +176,7 @@ public class FutureCoinsFragment extends Fragment {
         });
     }
 
+    /** Parses block number from a single "block" command response. */
     private long parseBlock(String response) {
         try {
             JSONParser parser = new JSONParser();
@@ -151,6 +190,45 @@ public class FutureCoinsFragment extends Fragment {
             }
         } catch (Exception ignored) { }
         return -1;
+    }
+
+    /** Parses block number from a batch response array (first item = block command). */
+    private long parseBlockFromBatch(String response) {
+        try {
+            JSONParser parser = new JSONParser();
+            Object parsed = parser.parse(response);
+            if (parsed instanceof JSONArray) {
+                Object first = ((JSONArray) parsed).get(0);
+                if (first instanceof JSONObject) {
+                    return parseBlock(first.toString());
+                }
+            }
+            // Fallback: single response
+            return parseBlock(response);
+        } catch (Exception ignored) { }
+        return -1;
+    }
+
+    /** Parses script address from a batch response array (second item = newscript command). */
+    private String parseScriptAddress(String response) {
+        try {
+            JSONParser parser = new JSONParser();
+            Object parsed = parser.parse(response);
+            if (parsed instanceof JSONArray) {
+                JSONArray arr = (JSONArray) parsed;
+                if (arr.size() >= 2) {
+                    Object second = arr.get(1);
+                    if (second instanceof JSONObject) {
+                        Object resp = ((JSONObject) second).get("response");
+                        if (resp instanceof JSONObject) {
+                            Object addr = ((JSONObject) resp).get("address");
+                            if (addr != null) return addr.toString();
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) { }
+        return null;
     }
 
     private List<FutureCoin> parseCoins(String response, long block) {
@@ -172,7 +250,6 @@ public class FutureCoinsFragment extends Fragment {
                 if (!(stateObj instanceof JSONArray)) continue;
                 JSONArray state = (JSONArray) stateObj;
 
-                String ownerKey = null;
                 long targetBlock = -1;
                 long targetMs = -1;
 
@@ -183,12 +260,11 @@ public class FutureCoinsFragment extends Fragment {
                     Object dataObj = entry.get("data");
                     if (portObj == null || dataObj == null) continue;
                     int port = Integer.parseInt(portObj.toString());
-                    if (port == STATE_OWNER_KEY)    ownerKey   = dataObj.toString();
                     if (port == STATE_TARGET_BLOCK) targetBlock = Long.parseLong(dataObj.toString());
                     if (port == STATE_TARGET_MS)    targetMs    = Long.parseLong(dataObj.toString());
                 }
 
-                if (ownerKey == null || targetBlock < 0) continue;
+                if (targetBlock < 0) continue;
 
                 String coinId  = obj.get("coinid")  != null ? obj.get("coinid").toString() : "";
                 String amount  = obj.get("amount")  != null ? obj.get("amount").toString() : "0";
@@ -199,7 +275,6 @@ public class FutureCoinsFragment extends Fragment {
                 coin.coinId      = coinId;
                 coin.amount      = amount;
                 coin.tokenId     = tokenId;
-                coin.ownerKey    = ownerKey;
                 coin.targetBlock = targetBlock;
                 coin.targetMs    = targetMs;
                 coin.currentBlock= block;
@@ -236,26 +311,30 @@ public class FutureCoinsFragment extends Fragment {
                                     "txnoutput id:" + txId +
                                         " amount:" + coin.amount +
                                         " address:" + kd.miniAddress +
-                                        " tokenid:" + coin.tokenId + ";" +
+                                        " tokenid:" + coin.tokenId +
+                                        " storestate:false;" +
                                     "txnbasics id:" + txId + ";" +
-                                    "txnsign id:" + txId + " publickey:" + coin.ownerKey + ";" +
                                     "txnpost id:" + txId + ";" +
                                     "txndelete id:" + txId;
 
                             String resp = ApiHelper.post(apiUrl, cmds);
-                            walletViewModel.addServerLog("CMD: collect\nRES: " + resp);
-
+                            final String respFinal = resp;
+                            boolean success = resp != null && resp.contains("\"status\":true");
                             if (getActivity() != null) {
                                 getActivity().runOnUiThread(() -> {
+                                    if (walletViewModel != null) walletViewModel.addServerLog("collect >> " + cmds + "\ncollect << " + respFinal);
                                     if (!isAdded()) return;
                                     Toast.makeText(requireContext(),
-                                            R.string.future_collected_ok, Toast.LENGTH_SHORT).show();
-                                    loadCoins(); // Refresh list
+                                            success ? R.string.future_collected_ok : R.string.future_collect_error,
+                                            Toast.LENGTH_SHORT).show();
+                                    loadCoins();
                                 });
                             }
                         } catch (Exception e) {
+                            final String err = e.getMessage();
                             if (getActivity() != null) {
                                 getActivity().runOnUiThread(() -> {
+                                    if (walletViewModel != null) walletViewModel.addServerLog("collect error: " + err);
                                     if (isAdded())
                                         Toast.makeText(requireContext(),
                                                 R.string.future_collect_error, Toast.LENGTH_SHORT).show();
@@ -363,7 +442,6 @@ public class FutureCoinsFragment extends Fragment {
         String coinId;
         String amount;
         String tokenId;
-        String ownerKey;
         long targetBlock;
         long targetMs;
         long currentBlock;

@@ -219,6 +219,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             fragment = new FutureCashFragment();
         } else if (itemId == R.id.nav_log) {
             fragment = new LogFragment();
+        } else if (itemId == R.id.nav_explorer) {
+            fragment = new ExplorerFragment();
         }
 
         if (fragment != null) {
@@ -256,6 +258,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     toolbar.setTitle(R.string.drawer_future);
                 } else if (menuItemId == R.id.nav_log) {
                     toolbar.setTitle(R.string.drawer_log);
+                } else if (menuItemId == R.id.nav_explorer) {
+                    toolbar.setTitle(R.string.drawer_explorer);
                 }
             }
         } catch (Exception e) {
