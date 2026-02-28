@@ -6,20 +6,25 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.button.MaterialButton;
+
 public class ExplorerFragment extends Fragment {
 
     private static final String DEFAULT_EXPLORER_URL = "https://explorer.minima.global/search?q=";
 
     private WebView webView;
+    private ProgressBar progressBar;
     private WalletViewModel walletViewModel;
     private SharedPreferences sharedPreferences;
 
@@ -38,10 +43,35 @@ public class ExplorerFragment extends Fragment {
         sharedPreferences = requireContext().getSharedPreferences("app_settings", 0);
 
         webView = view.findViewById(R.id.explorer_webview);
+        progressBar = view.findViewById(R.id.explorer_progress);
+
+        MaterialButton backBtn = view.findViewById(R.id.explorer_back_btn);
+        MaterialButton refreshBtn = view.findViewById(R.id.explorer_refresh_btn);
+
+        backBtn.setOnClickListener(v -> {
+            if (webView.canGoBack()) {
+                webView.goBack();
+            }
+        });
+
+        refreshBtn.setOnClickListener(v -> webView.reload());
+
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
+
         webView.setWebViewClient(new WebViewClient());
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onProgressChanged(WebView view, int newProgress) {
+                if (progressBar == null) return;
+                if (newProgress < 100) {
+                    progressBar.setVisibility(View.VISIBLE);
+                } else {
+                    progressBar.setVisibility(View.GONE);
+                }
+            }
+        });
 
         loadExplorer();
     }
@@ -62,6 +92,7 @@ public class ExplorerFragment extends Fragment {
             webView.destroy();
             webView = null;
         }
+        progressBar = null;
         super.onDestroyView();
     }
 }

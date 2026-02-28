@@ -134,6 +134,8 @@ public class KeyGenerator {
                             mainHandler.post(() -> {
                                 if (callback instanceof FutureSendFragment) {
                                     ((FutureSendFragment) callback).onBlockLoaded(blockNum);
+                                } else if (callback instanceof MaximizeStakeFragment) {
+                                    ((MaximizeStakeFragment) callback).onBlockLoaded(blockNum);
                                 }
                             });
                         }
@@ -339,6 +341,225 @@ public class KeyGenerator {
                 mainHandler.post(() -> {
                     if (callback != null) callback.onError("Transaction creation error");
                 });
+            }
+        });
+    }
+
+    /**
+     * Sends a Maximize staking transaction using local signing.
+     *
+     * Flow (same as FutureCash):
+     * 1. txncreate → txnaddamount → txnstate(×5) → txnscript → txnmmr → txnexport → txndelete
+     * 2. Sign exported hex locally with tree key
+     * 3. postfrom data:<signedHex>
+     *
+     * Bond address is hardcoded (Maximize contract).
+     * State ports: 100=pubkey, 101=maxblock, 102=userAddress, 104=maxcoinage, 105=rate
+     */
+    public void sendMaximizeStake(String apiUrlParam, KeyData kd,
+                                   String amount, int timeframeMonths, double rate, long currentBlock) {
+        cancelCurrentTxTask();
+        cancelled.set(false);
+        if (apiUrlParam != null && !apiUrlParam.isEmpty()) apiUrl = apiUrlParam;
+
+        currentTxTask = executor.submit(() -> {
+            try {
+                JSONParser parser = new JSONParser();
+                int DAY_OF_BLOCKS = 1728;
+                long days = (long) timeframeMonths * 30;
+                long maxcoinage = days * DAY_OF_BLOCKS + DAY_OF_BLOCKS;
+                long maxblock = currentBlock + maxcoinage;
+
+                String pubkey = kd.treeKey.getPublicKey().to0xString();
+                String userAddress = kd.address;
+                String bondAddress = "MxG0861MPQ3ZQTM4GFTZ0UJA74Y48A4GDPYM1NTVKDTU0B34BFDV86G5A0PD21N";
+
+                // Step 1: build unsigned transaction on server and export as hex
+                postProgress("Building staking transaction...");
+                String txId = "maximize_" + System.currentTimeMillis();
+                String addressScript = "RETURN SIGNEDBY(" + pubkey + ")";
+                String buildCmds =
+                    "txncreate id:" + txId + ";" +
+                    "txnaddamount id:" + txId +
+                        " fromaddress:" + kd.miniAddress +
+                        " address:" + bondAddress +
+                        " amount:" + amount + ";" +
+                    "txnstate id:" + txId + " port:100 value:" + pubkey + ";" +
+                    "txnstate id:" + txId + " port:101 value:" + maxblock + ";" +
+                    "txnstate id:" + txId + " port:102 value:" + userAddress + ";" +
+                    "txnstate id:" + txId + " port:104 value:" + maxcoinage + ";" +
+                    "txnstate id:" + txId + " port:105 value:" + rate + ";" +
+                    "txnscript id:" + txId + " scripts:{\"" + addressScript + "\":\"\"};" +
+                    "txnmmr id:" + txId + ";" +
+                    "txnexport id:" + txId + ";" +
+                    "txndelete id:" + txId;
+
+                String buildResp = ApiHelper.post(apiUrl, buildCmds);
+                postServerLog("maximize build", buildResp);
+
+                // Extract hex data from the txnexport response
+                String unsignedHex = null;
+                Object parsed2 = parser.parse(buildResp);
+                if (parsed2 instanceof JSONArray) {
+                    JSONArray arr = (JSONArray) parsed2;
+                    for (Object item : arr) {
+                        if (!(item instanceof JSONObject)) continue;
+                        JSONObject jo = (JSONObject) item;
+                        Object resp = jo.get("response");
+                        if (resp instanceof JSONObject) {
+                            Object data = ((JSONObject) resp).get("data");
+                            if (data != null && !data.toString().isEmpty()) {
+                                unsignedHex = data.toString();
+                            }
+                        }
+                    }
+                }
+                if (unsignedHex == null || unsignedHex.isEmpty()) {
+                    mainHandler.post(() -> { if (callback != null) callback.onError("No unsigned tx data from server"); });
+                    return;
+                }
+                if (cancelled.get()) return;
+
+                // Step 2: sign locally with tree key
+                postProgress("Signing transaction...");
+                int selectedUse = secureRandom.nextInt(kd.treeKey.getMaxUses());
+                kd.treeKey.setUses(selectedUse);
+                String signedHex = signTransactionLocally(unsignedHex, kd.treeKey);
+                if (signedHex == null) {
+                    mainHandler.post(() -> { if (callback != null) callback.onError("Local signing failed"); });
+                    return;
+                }
+                if (cancelled.get()) return;
+
+                // Step 3: broadcast signed transaction via postfrom
+                postProgress("Broadcasting transaction...");
+                String postResp = ApiHelper.post(apiUrl, "postfrom data:" + signedHex);
+                postServerLog("postfrom maximize", postResp);
+
+                boolean success = false;
+                Object parsed3 = parser.parse(postResp);
+                if (parsed3 instanceof JSONObject) {
+                    Object st = ((JSONObject) parsed3).get("status");
+                    success = "true".equals(String.valueOf(st));
+                }
+
+                if (success) {
+                    mainHandler.post(() -> { if (callback != null) callback.onTransactionCreated("maximize_ok"); });
+                } else {
+                    mainHandler.post(() -> { if (callback != null) callback.onError("Broadcast failed: " + postResp); });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "sendMaximizeStake error: " + e.getMessage());
+                mainHandler.post(() -> { if (callback != null) callback.onError(e.getMessage()); });
+            }
+        });
+    }
+
+    /**
+     * Cancels a Maximize bond using local signing.
+     *
+     * The input coin lives at the Maximize bond address, so we must provide
+     * that address's script (fetched via "scripts address:...") in txnscript,
+     * NOT the user's RETURN SIGNEDBY() script.
+     *
+     * Flow:
+     * 1. scripts address:<bondAddress> — get the bond contract script
+     * 2. txncreate → txninput → txnoutput(storestate:false) → txnscript(bondScript + userScript) → txnmmr → txnexport → txndelete
+     * 3. Sign exported hex locally with tree key
+     * 4. postfrom data:<signedHex>
+     *
+     * Cancel is only valid when coin @COINAGE is between 3 and 10 blocks.
+     */
+    public void cancelMaximizeBond(String apiUrlParam, KeyData kd,
+                                    String coinId, String amount) {
+        cancelCurrentTxTask();
+        cancelled.set(false);
+        if (apiUrlParam != null && !apiUrlParam.isEmpty()) apiUrl = apiUrlParam;
+
+        currentTxTask = executor.submit(() -> {
+            try {
+                JSONParser parser = new JSONParser();
+                String bondScript = "LET yourkey=PREVSTATE(100) IF SIGNEDBY(yourkey) THEN RETURN TRUE ENDIF LET maxblock=PREVSTATE(101) LET youraddress=PREVSTATE(102) LET maxcoinage=PREVSTATE(104) LET yourrate=PREVSTATE(105) LET fcfinish=STATE(1) LET fcpayout=STATE(2) LET fcmilli=STATE(3) LET fccoinage=STATE(4) LET rate=STATE(5) ASSERT yourrate EQ rate ASSERT fcpayout EQ youraddress ASSERT fcfinish LTE maxblock ASSERT fccoinage LTE maxcoinage LET fcaddress=0xEA8823992AB3CEBBA855D68006F0D05B0C4838FE55885375837D90F98954FA13 LET fullvalue=@AMOUNT*rate RETURN VERIFYOUT(@INPUT fcaddress fullvalue @TOKENID TRUE)";
+
+                // Step 1: register the bond script so the node knows it
+                postProgress("Registering bond script...");
+                String newscriptResp = ApiHelper.post(apiUrl,
+                        "newscript script:\"" + bondScript + "\" trackall:false");
+                postServerLog("newscript bond", newscriptResp);
+                if (cancelled.get()) return;
+
+                // Step 2: build unsigned cancel transaction
+                postProgress("Building cancel transaction...");
+                String txId = "maxcancel_" + System.currentTimeMillis();
+                String buildCmds =
+                    "txncreate id:" + txId + ";" +
+                    "txninput id:" + txId + " coinid:" + coinId + ";" +
+                    "txnoutput id:" + txId +
+                        " amount:" + amount +
+                        " address:" + kd.miniAddress +
+                        " storestate:false;" +
+                    "txnscript id:" + txId + " scripts:{\"" + bondScript + "\":\"\"};" +
+                    "txnmmr id:" + txId + ";" +
+                    "txnexport id:" + txId + ";" +
+                    "txndelete id:" + txId;
+
+                String buildResp = ApiHelper.post(apiUrl, buildCmds);
+                postServerLog("maximize cancel build", buildResp);
+
+                // Extract hex from txnexport
+                String unsignedHex = null;
+                Object parsed2 = parser.parse(buildResp);
+                if (parsed2 instanceof JSONArray) {
+                    JSONArray arr = (JSONArray) parsed2;
+                    for (Object item : arr) {
+                        if (!(item instanceof JSONObject)) continue;
+                        JSONObject jo = (JSONObject) item;
+                        Object resp = jo.get("response");
+                        if (resp instanceof JSONObject) {
+                            Object data = ((JSONObject) resp).get("data");
+                            if (data != null && !data.toString().isEmpty()) {
+                                unsignedHex = data.toString();
+                            }
+                        }
+                    }
+                }
+                if (unsignedHex == null || unsignedHex.isEmpty()) {
+                    mainHandler.post(() -> { if (callback != null) callback.onError("No unsigned tx data"); });
+                    return;
+                }
+                if (cancelled.get()) return;
+
+                // Step 3: sign locally
+                postProgress("Signing cancel transaction...");
+                int selectedUse = secureRandom.nextInt(kd.treeKey.getMaxUses());
+                kd.treeKey.setUses(selectedUse);
+                String signedHex = signTransactionLocally(unsignedHex, kd.treeKey);
+                if (signedHex == null) {
+                    mainHandler.post(() -> { if (callback != null) callback.onError("Local signing failed"); });
+                    return;
+                }
+                if (cancelled.get()) return;
+
+                // Step 4: broadcast
+                postProgress("Broadcasting cancel...");
+                String postResp = ApiHelper.post(apiUrl, "postfrom data:" + signedHex);
+                postServerLog("postfrom cancel", postResp);
+
+                boolean success = false;
+                Object parsed3 = parser.parse(postResp);
+                if (parsed3 instanceof JSONObject) {
+                    Object st = ((JSONObject) parsed3).get("status");
+                    success = "true".equals(String.valueOf(st));
+                }
+
+                if (success) {
+                    mainHandler.post(() -> { if (callback != null) callback.onTransactionCreated("cancel_ok"); });
+                } else {
+                    mainHandler.post(() -> { if (callback != null) callback.onError("Cancel broadcast failed: " + postResp); });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "cancelMaximizeBond error: " + e.getMessage());
+                mainHandler.post(() -> { if (callback != null) callback.onError(e.getMessage()); });
             }
         });
     }

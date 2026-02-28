@@ -48,6 +48,9 @@ Seed Phrase → [locally] → Private Key + Address
 |---|---|
 | 💰 **Wallet** | View balance, generate cryptographic keys and addresses |
 | 📤 **Send** | Send transactions to the Minima network with token selector |
+| 🌐 **Explorer** | Built-in blockchain explorer with back/refresh navigation |
+| 🔒 **FutureCash** | Lock funds until a future date with time-lock scripts |
+| 📈 **Maximize** | Stake MINIMA for 1–12 months and earn guaranteed returns (0.5%–9%) |
 | 🔑 **Seed Phrase** | Securely store and manage your seed phrase (BIP39) |
 | ⚙️ **Settings** | Configure node URL |
 | 🔒 **Biometrics** | Fingerprint authentication on startup |
@@ -66,15 +69,22 @@ Seed Phrase → [locally] → Private Key + Address
 
 ```
 app/src/main/java/com/example/minimawallet/
-├── MainActivity.java        # Main activity, Navigation Drawer
-├── WalletFragment.java      # Balance, key generation, token list
-├── SendFragment.java        # Send transactions with token selector
-├── SeedPhraseFragment.java  # Seed phrase management
-├── SettingsFragment.java    # Settings
-├── LogFragment.java         # Server response log
-├── WalletViewModel.java     # Shared state (LiveData)
-├── KeyGenerator.java        # Key generation (SecureRandom + ExecutorService)
-└── SecureStorage.java       # Encrypted storage (Android Keystore)
+├── MainActivity.java            # Main activity, Navigation Drawer
+├── WalletFragment.java          # Balance, key generation, token list
+├── SendFragment.java            # Send transactions with token selector
+├── ExplorerFragment.java        # Built-in blockchain explorer (WebView)
+├── FutureCashFragment.java      # FutureCash tabs container
+├── FutureSendFragment.java      # Create time-locked transactions
+├── FutureCoinsFragment.java     # List/collect locked coins
+├── MaximizeFragment.java        # Maximize (staking) tabs container
+├── MaximizeStakeFragment.java   # Stake MINIMA for 1-12 months
+├── MaximizeBondsFragment.java   # List/cancel active stakes
+├── SeedPhraseFragment.java      # Seed phrase management
+├── SettingsFragment.java        # Settings
+├── LogFragment.java             # Server response log
+├── WalletViewModel.java         # Shared state (LiveData)
+├── KeyGenerator.java            # Key generation, tx building, staking
+└── SecureStorage.java           # Encrypted storage (Android Keystore)
 ```
 
 **Stack:** Java · Material Design 3 · ViewBinding · ViewModel/LiveData · BiometricPrompt · Android Keystore
@@ -147,6 +157,9 @@ Seed-фраза → [локально] → Приватный ключ + Адр�
 |---|---|
 | 💰 **Кошелёк** | Просмотр баланса, генерация криптографических ключей и адресов |
 | 📤 **Отправка** | Отправка транзакций с выбором токена |
+| 🌐 **Эксплорер** | Встроенный обозреватель блокчейна с навигацией назад/обновить |
+| 🔒 **FutureCash** | Блокировка средств до будущей даты через time-lock скрипты |
+| 📈 **Maximize** | Стейкинг MINIMA на 1–12 месяцев с гарантированным доходом (0.5%–9%) |
 | 🔑 **Seed-фраза** | Безопасное хранение и управление сид-фразой (BIP39) |
 | ⚙️ **Настройки** | Настройка URL узла |
 | 🔒 **Биометрия** | Аутентификация по отпечатку пальца при запуске |

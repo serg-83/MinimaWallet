@@ -169,4 +169,32 @@
     <string name="future_collect_confirm_msg" formatted="false">Забрать %s в кошелёк?</string>
     <string name="future_collected_ok">Средства успешно получены!</string>
     <string name="future_collect_error">Не удалось получить средства</string>
+
+    <!-- Maximize (Staking) -->
+    <string name="drawer_maximize">Maximize</string>
+    <string name="maximize_stake_title">Застейкать MINIMA</string>
+    <string name="maximize_amount_hint">Мин 1, Макс 25 000 MINIMA</string>
+    <string name="maximize_select_timeframe">Выберите срок</string>
+    <string name="maximize_rate_info" formatted="false">Срок: %d мес., Ставка: %.2f%%</string>
+    <string name="maximize_income_info" formatted="false">Вы получите: %s MINIMA (+%s)</string>
+    <string name="maximize_stake_btn">Застейкать</string>
+    <string name="maximize_confirm_title">Подтверждение стейкинга</string>
+    <string name="maximize_confirm_msg" formatted="false">Застейкать %s MINIMA на %d мес.?\nОжидаемый доход: %s MINIMA</string>
+    <string name="maximize_staked_title">Застейкано!</string>
+    <string name="maximize_staked_msg">Ваши MINIMA застейканы. Они появятся во вкладке «Мои стейки» после подтверждения.</string>
+    <string name="maximize_min_amount" formatted="false">Минимальная сумма: %d MINIMA</string>
+    <string name="maximize_max_amount" formatted="false">Максимальная сумма: %d MINIMA</string>
+    <string name="maximize_no_bonds">Активных стейков не найдено</string>
+    <string name="maximize_bond_income" formatted="false">Ставка: %s → Доход: %s MINIMA</string>
+    <string name="maximize_cancel_stake">Отменить стейк</string>
+    <string name="maximize_cancel_confirm_title">Отмена стейка</string>
+    <string name="maximize_cancel_confirm_msg" formatted="false">Отменить стейк на %s MINIMA? Средства вернутся без процентов.</string>
+    <string name="maximize_cancel_window_info">Стейк можно отменить в течение 3–10 блоков после создания</string>
+    <string name="maximize_cancelled_ok">Стейк успешно отменён</string>
+    <string name="maximize_cancel_error">Не удалось отменить стейк</string>
+    <string name="created_by">Создано SeregaKi</string>
+
+    <!-- Explorer -->
+    <string name="explorer_back">Назад</string>
+    <string name="explorer_refresh">Обновить</string>
 </resources>

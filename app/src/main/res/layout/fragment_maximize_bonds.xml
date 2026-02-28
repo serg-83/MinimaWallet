@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_color">
+
+    <!-- Refresh button row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="8dp"
+        android:gravity="end">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/maximize_refresh_btn"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="@string/refresh_balance"
+            android:textSize="13sp" />
+
+    </LinearLayout>
+
+    <!-- Loading indicator -->
+    <ProgressBar
+        android:id="@+id/maximize_list_loading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="32dp"
+        android:visibility="gone" />
+
+    <!-- Empty state -->
+    <TextView
+        android:id="@+id/maximize_list_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:gravity="center"
+        android:textSize="14sp"
+        android:textColor="@color/on_card_label"
+        android:paddingHorizontal="32dp"
+        android:visibility="gone" />
+
+    <!-- Cancel window info -->
+    <TextView
+        android:id="@+id/maximize_cancel_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/maximize_cancel_window_info"
+        android:textSize="12sp"
+        android:textColor="@color/on_card_label"
+        android:gravity="center"
+        android:paddingHorizontal="20dp"
+        android:paddingBottom="4dp"
+        android:visibility="gone" />
+
+    <!-- Bonds list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/maximize_bonds_recycler"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingTop="8dp"
+        android:clipToPadding="false" />
+
+</LinearLayout>

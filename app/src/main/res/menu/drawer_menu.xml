@@ -15,45 +15,6 @@
             android:icon="@drawable/ic_send"
             android:title="@string/drawer_send" />
 
-    </group>
-
-    <group
-        android:id="@+id/group_seed"
-        android:checkableBehavior="single">
-
-        <item
-            android:id="@+id/nav_seed_phrase"
-            android:icon="@drawable/ic_key"
-            android:title="@string/drawer_seed_phrase" />
-
-    </group>
-
-    <group
-        android:id="@+id/group_other"
-        android:checkableBehavior="single">
-
-        <item
-            android:id="@+id/nav_settings"
-            android:icon="@drawable/ic_settings"
-            android:title="@string/drawer_settings" />
-
-    </group>
-
-    <group
-        android:id="@+id/group_future"
-        android:checkableBehavior="single">
-
-        <item
-            android:id="@+id/nav_future"
-            android:icon="@drawable/ic_future"
-            android:title="@string/drawer_future" />
-
-    </group>
-
-    <group
-        android:id="@+id/group_explorer"
-        android:checkableBehavior="single">
-
         <item
             android:id="@+id/nav_explorer"
             android:icon="@drawable/ic_send"
@@ -62,13 +23,39 @@
     </group>
 
     <group
-        android:id="@+id/group_log"
+        android:id="@+id/group_products"
         android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/nav_future"
+            android:icon="@drawable/ic_future"
+            android:title="@string/drawer_future" />
+
+        <item
+            android:id="@+id/nav_maximize"
+            android:icon="@drawable/ic_maximize"
+            android:title="@string/drawer_maximize" />
+
+    </group>
+
+    <group
+        android:id="@+id/group_tools"
+        android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/nav_seed_phrase"
+            android:icon="@drawable/ic_key"
+            android:title="@string/drawer_seed_phrase" />
 
         <item
             android:id="@+id/nav_log"
             android:icon="@drawable/ic_log"
             android:title="@string/drawer_log" />
+
+        <item
+            android:id="@+id/nav_settings"
+            android:icon="@drawable/ic_settings"
+            android:title="@string/drawer_settings" />
 
     </group>
 

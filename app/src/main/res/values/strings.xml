@@ -168,4 +168,32 @@
     <string name="future_collect_confirm_msg" formatted="false">Collect %s to your wallet?</string>
     <string name="future_collected_ok">Funds collected successfully!</string>
     <string name="future_collect_error">Failed to collect funds</string>
+
+    <!-- Maximize (Staking) -->
+    <string name="drawer_maximize">Maximize</string>
+    <string name="maximize_stake_title">Stake MINIMA</string>
+    <string name="maximize_amount_hint">Min 1, Max 25,000 MINIMA</string>
+    <string name="maximize_select_timeframe">Select timeframe</string>
+    <string name="maximize_rate_info" formatted="false">Timeframe: %d months, Rate: %.2f%%</string>
+    <string name="maximize_income_info" formatted="false">You will receive: %s MINIMA (+%s)</string>
+    <string name="maximize_stake_btn">Stake</string>
+    <string name="maximize_confirm_title">Confirm Staking</string>
+    <string name="maximize_confirm_msg" formatted="false">Stake %s MINIMA for %d months?\nExpected return: %s MINIMA</string>
+    <string name="maximize_staked_title">Staked!</string>
+    <string name="maximize_staked_msg">Your MINIMA has been staked. It will appear in \"My Stakes\" once confirmed.</string>
+    <string name="maximize_min_amount" formatted="false">Minimum amount: %d MINIMA</string>
+    <string name="maximize_max_amount" formatted="false">Maximum amount: %d MINIMA</string>
+    <string name="maximize_no_bonds">No active stakes found</string>
+    <string name="maximize_bond_income" formatted="false">Rate: %s → Return: %s MINIMA</string>
+    <string name="maximize_cancel_stake">Cancel Stake</string>
+    <string name="maximize_cancel_confirm_title">Cancel Stake</string>
+    <string name="maximize_cancel_confirm_msg" formatted="false">Cancel stake of %s MINIMA? Funds will be returned without interest.</string>
+    <string name="maximize_cancel_window_info">Stake can be cancelled within 3–10 blocks after creation</string>
+    <string name="maximize_cancelled_ok">Stake cancelled successfully</string>
+    <string name="maximize_cancel_error">Failed to cancel stake</string>
+    <string name="created_by">Created by SeregaKi</string>
+
+    <!-- Explorer -->
+    <string name="explorer_back">Back</string>
+    <string name="explorer_refresh">Refresh</string>
 </resources>
