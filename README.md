@@ -182,6 +182,15 @@ Seed-фраза → [локально] → Приватный ключ + Адр�
 
 ---
 
+## Support the Author / Поддержать автора
+
+| Network | Address |
+|---|---|
+| **Minima** | `MxG083R69BFAHDGPDMURJTYJBRM0E83MGP8U0C5DNJ6FCJHF40M5AF4YEN9ZVSH` |
+| **EVM (ETH, BNB, MATIC и др.)** | `0x966760456ceB665FB010720f320b199F9d3D6db3` |
+
+---
+
 ## License / Лицензия
 
 [MIT License](LICENSE)
