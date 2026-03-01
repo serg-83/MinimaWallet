@@ -55,6 +55,61 @@ Seed Phrase → [locally] → Private Key + Address
 | ⚙️ **Settings** | Configure node URL |
 | 🔒 **Biometrics** | Fingerprint authentication on startup |
 
+### Working with API
+
+By default, the app uses the public API endpoint:
+
+```
+https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD
+```
+
+This UID is permanent and does not change. **If the API URL field is left empty, this default endpoint will be used.**
+
+To use your own API endpoint:
+
+1. Make sure your server node has **Public Wallet** and **MegaMMR** enabled
+2. Open the Public Wallet in your browser
+3. Copy the full URL including the UID — it should look like:
+   ```
+   https://YOUR_IP:9003/mdscommand_/cmd?uid=YOUR_UID
+   ```
+4. Paste it into the Settings → API URL field
+
+> ⚠️ **Note:** The UID will most likely change after a server restart. You will need to update the URL in the app settings.
+>
+> Example of a working API URL:
+> ```
+> https://spartacusrex.com:8888/mdscommand_/cmd?uid=0x12D2B61F...79C
+> ```
+
+---
+
+### Working with Seed Phrase
+
+On first launch, you can enter a seed phrase for your wallet. A seed phrase can be **any word, symbol, character, or combination of them** — even a space counts as a valid phrase.
+
+- 🎲 You can generate a **random 24-word phrase** using the built-in generator
+- 💾 Press **Save Phrase** to store it encrypted with your fingerprint
+- 📝 **Write your phrase down on paper!** If you forget or lose it, **nobody can recover it**
+
+To view or change your saved phrase:
+
+1. Go to **Seed Phrase** in the navigation menu
+2. Authenticate with your fingerprint
+3. Make changes if needed and press **Save** again
+4. If no changes — simply navigate to the Wallet and continue using the app
+
+---
+
+### Working with Address
+
+The app works with **one address number at a time**. You can generate any address number associated with your seed phrase.
+
+- Address numbers range from **0** to **999,999,999** — that's how many deterministic addresses the app supports for a single phrase
+- 💡 **Tip:** Don't use excessively large address numbers to avoid confusion — keep it simple
+
+---
+
 ### Security
 
 - **No node required** — the app works via the public API `wallet.minima.global`
@@ -163,6 +218,61 @@ Seed-фраза → [локально] → Приватный ключ + Адр�
 | 🔑 **Seed-фраза** | Безопасное хранение и управление сид-фразой (BIP39) |
 | ⚙️ **Настройки** | Настройка URL узла |
 | 🔒 **Биометрия** | Аутентификация по отпечатку пальца при запуске |
+
+### Работа с API
+
+По умолчанию приложение использует публичный API-адрес:
+
+```
+https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD
+```
+
+Этот UID постоянный и не меняется. **Если поле API URL оставить пустым, будет использоваться именно этот адрес.**
+
+Чтобы использовать собственный API-адрес:
+
+1. Убедитесь, что на вашем сервере в ноде включены **Public Wallet** и **MegaMMR**
+2. Откройте Public Wallet в браузере
+3. Скопируйте полный адрес вместе с UID — он будет вида:
+   ```
+   https://ВАШ_IP:9003/mdscommand_/cmd?uid=ВАШ_UID
+   ```
+4. Вставьте его в настройках приложения → API URL
+
+> ⚠️ **Важно:** После перезагрузки сервера UID скорее всего изменится. Вам нужно будет обновить URL в настройках приложения.
+>
+> Пример рабочего API-адреса:
+> ```
+> https://spartacusrex.com:8888/mdscommand_/cmd?uid=0x12D2B61F...79C
+> ```
+
+---
+
+### Работа с фразой
+
+При первом запуске приложения вам доступен ввод фразы для вашего кошелька. Фразой может быть **любое слово, символ, знак или их сочетание** — даже пробел является допустимой фразой.
+
+- 🎲 Вы можете сгенерировать **случайную фразу из 24 слов** встроенным генератором
+- 💾 Нажмите **Сохранить фразу** — она сохранится зашифрованной отпечатком пальца
+- 📝 **Обязательно запишите фразу на бумаге!** Если вы её забудете или потеряете — **никто не сможет её восстановить**
+
+Чтобы посмотреть или изменить сохранённую фразу:
+
+1. Перейдите в пункт меню **Seed-фраза**
+2. Отсканируйте отпечаток пальца
+3. При необходимости внесите изменения и нажмите **Сохранить** повторно
+4. Если изменений нет — просто перейдите в кошелёк и продолжайте использовать приложение
+
+---
+
+### Работа с адресом
+
+Программа в один момент времени работает только с **одним номером адреса**. Вы можете сгенерировать любой номер адреса, относящийся к вашей фразе.
+
+- Номер адреса можно выбрать от **0** до **999 999 999** — именно столько детерминированных адресов поддерживает программа для одной фразы
+- 💡 **Совет:** Не старайтесь использовать слишком большие номера адресов, чтобы самому не запутаться — выбирайте простые числа
+
+---
 
 ### Безопасность
 
