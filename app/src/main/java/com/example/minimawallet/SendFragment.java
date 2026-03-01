@@ -1,21 +1,41 @@
 package com.example.minimawallet;
 
+import android.Manifest;
 import android.content.ClipboardManager;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.MultiFormatReader;
+import com.google.zxing.RGBLuminanceSource;
+import com.google.zxing.Result;
+import com.google.zxing.common.HybridBinarizer;
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanOptions;
+
+import java.io.InputStream;
 
 import com.example.minimawallet.KeyGenerator.KeyData;
 import com.example.minimawallet.KeyGenerator.TokenBalance;
@@ -40,8 +60,30 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
     private AutoCompleteTextView tokenSelector;
     private MaterialTextView currentAddressText, currentBalanceText;
     private MaterialButton sendTransactionBtn;
+    private ImageButton scanQrBtn;
 
     private boolean isTransactionInProgress = false;
+
+    private final ActivityResultLauncher<ScanOptions> qrScanLauncher =
+            registerForActivityResult(new ScanContract(), result -> {
+                if (result.getContents() != null && recipientAddressEdit != null) {
+                    recipientAddressEdit.setText(result.getContents().trim());
+                }
+            });
+
+    private final ActivityResultLauncher<String> cameraPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) {
+                    launchQrScanner();
+                } else {
+                    Toast.makeText(requireContext(), R.string.camera_permission_required, Toast.LENGTH_SHORT).show();
+                }
+            });
+
+    private final ActivityResultLauncher<String> imagePickerLauncher =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (uri != null) decodeQrFromImage(uri);
+            });
 
     // All available tokens including Minima
     private List<TokenBalance> availableTokens = new ArrayList<>();
@@ -87,6 +129,7 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
         currentAddressText = view.findViewById(R.id.current_address_text);
         currentBalanceText = view.findViewById(R.id.current_balance_text);
         sendTransactionBtn = view.findViewById(R.id.send_transaction_btn);
+        scanQrBtn = view.findViewById(R.id.scan_qr_btn);
     }
 
     private void setupClickListeners() {
@@ -100,12 +143,69 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
         if (recipientAddressLayout != null) {
             recipientAddressLayout.setEndIconOnClickListener(v -> pasteAddressFromClipboard());
         }
+        if (scanQrBtn != null) {
+            scanQrBtn.setOnClickListener(v -> requestCameraAndScan());
+        }
         if (tokenSelector != null) {
             tokenSelector.setOnItemClickListener((parent, v, position, id) -> {
                 selectedTokenIndex = position;
                 updateAmountSuffix();
                 updateBalanceForSelectedToken();
             });
+        }
+    }
+
+    private void requestCameraAndScan() {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.scan_qr_code)
+                .setItems(new CharSequence[]{
+                        getString(R.string.qr_scan_camera),
+                        getString(R.string.qr_scan_file)
+                }, (dialog, which) -> {
+                    if (which == 0) {
+                        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+                                == PackageManager.PERMISSION_GRANTED) {
+                            launchQrScanner();
+                        } else {
+                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+                        }
+                    } else {
+                        imagePickerLauncher.launch("image/*");
+                    }
+                })
+                .show();
+    }
+
+    private void launchQrScanner() {
+        ScanOptions options = new ScanOptions();
+        options.setDesiredBarcodeFormats(ScanOptions.QR_CODE);
+        options.setPrompt(getString(R.string.scan_qr_code));
+        options.setBeepEnabled(false);
+        options.setOrientationLocked(true);
+        options.setCaptureActivity(PortraitCaptureActivity.class);
+        qrScanLauncher.launch(options);
+    }
+
+    private void decodeQrFromImage(Uri uri) {
+        try {
+            InputStream is = requireContext().getContentResolver().openInputStream(uri);
+            Bitmap bitmap = BitmapFactory.decodeStream(is);
+            if (is != null) is.close();
+            if (bitmap == null) {
+                Toast.makeText(requireContext(), R.string.qr_decode_error, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            int w = bitmap.getWidth(), h = bitmap.getHeight();
+            int[] pixels = new int[w * h];
+            bitmap.getPixels(pixels, 0, w, 0, 0, w, h);
+            RGBLuminanceSource source = new RGBLuminanceSource(w, h, pixels);
+            BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
+            Result result = new MultiFormatReader().decode(binaryBitmap);
+            if (result != null && recipientAddressEdit != null) {
+                recipientAddressEdit.setText(result.getText().trim());
+            }
+        } catch (Exception e) {
+            Toast.makeText(requireContext(), R.string.qr_decode_error, Toast.LENGTH_SHORT).show();
         }
     }
 

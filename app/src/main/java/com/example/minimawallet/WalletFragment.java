@@ -5,10 +5,13 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
 import android.content.SharedPreferences;
+import android.widget.ImageView;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -25,8 +28,12 @@ import com.example.minimawallet.KeyGenerator.KeyData;
 import com.example.minimawallet.KeyGenerator.TokenBalance;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textview.MaterialTextView;
+
+import com.google.zxing.BarcodeFormat;
+import com.journeyapps.barcodescanner.BarcodeEncoder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +48,7 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
     private TextInputEditText addressNumberEdit;
     private MaterialTextView progressText, addressText, balanceText, seedStatusText;
     private MaterialButton generateKeysBtn, refreshBalanceBtn;
+    private ImageView qrCodeBtn;
     private ProgressBar loadingProgress;
     private RecyclerView tokensRecycler;
     private MaterialCardView tokensCard;
@@ -100,6 +108,22 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
             }
         }
 
+        // Restore address number from ViewModel
+        if (addressNumberEdit != null) {
+            String saved = walletViewModel.getAddressNumber();
+            if (saved != null && !saved.isEmpty()) {
+                addressNumberEdit.setText(saved);
+            }
+            addressNumberEdit.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override
+                public void afterTextChanged(Editable s) {
+                    walletViewModel.setAddressNumber(s.toString());
+                }
+            });
+        }
+
         walletViewModel.getKeyData().observe(getViewLifecycleOwner(), keyData -> {
             updateWalletDisplay();
         });
@@ -119,6 +143,7 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
             refreshBalanceBtn = view.findViewById(R.id.refresh_balance_btn);
             loadingProgress = view.findViewById(R.id.loading_progress);
             seedStatusText = view.findViewById(R.id.seed_status_text);
+            qrCodeBtn = view.findViewById(R.id.qr_code_btn);
             tokensCard = view.findViewById(R.id.tokens_card);
             tokensRecycler = view.findViewById(R.id.tokens_recycler);
 
@@ -148,6 +173,34 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
         }
         if (refreshBalanceBtn != null) {
             refreshBalanceBtn.setOnClickListener(v -> refreshBalance());
+        }
+        if (qrCodeBtn != null) {
+            qrCodeBtn.setOnClickListener(v -> showQrCode());
+        }
+    }
+
+    private void showQrCode() {
+        KeyData currentKeyData = walletViewModel.getCurrentKeyData();
+        if (currentKeyData == null || currentKeyData.miniAddress == null) {
+            showToast(getString(R.string.generate_keys_first));
+            return;
+        }
+        try {
+            BarcodeEncoder encoder = new BarcodeEncoder();
+            Bitmap bitmap = encoder.encodeBitmap(currentKeyData.miniAddress, BarcodeFormat.QR_CODE, 512, 512);
+
+            ImageView imageView = new ImageView(requireContext());
+            imageView.setImageBitmap(bitmap);
+            int pad = (int) (16 * getResources().getDisplayMetrics().density);
+            imageView.setPadding(pad, pad, pad, pad);
+
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.qr_code_title)
+                    .setView(imageView)
+                    .setPositiveButton(R.string.ok, null)
+                    .show();
+        } catch (Exception e) {
+            showToast(getString(R.string.error) + ": " + e.getMessage());
         }
     }
 

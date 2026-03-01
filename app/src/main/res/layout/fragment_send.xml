@@ -107,26 +107,46 @@
 
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/recipient_address_layout"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    style="@style/Widget.MinimaWallet.TextInputLayout"
-                    app:endIconMode="custom"
-                    app:endIconDrawable="@drawable/ic_content_paste"
-                    app:endIconContentDescription="@string/paste_address"
-                    app:endIconTint="@color/primary_color">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/recipient_address_edit"
-                        android:layout_width="match_parent"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/recipient_address_layout"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:hint="@string/recipient_address"
-                        android:inputType="text"
-                        android:textSize="14sp" />
+                        android:layout_weight="1"
+                        style="@style/Widget.MinimaWallet.TextInputLayout"
+                        app:endIconMode="custom"
+                        app:endIconDrawable="@drawable/ic_content_paste"
+                        app:endIconContentDescription="@string/paste_address"
+                        app:endIconTint="@color/primary_color">
 
-                </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/recipient_address_edit"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="@string/recipient_address"
+                            android:inputType="textMultiLine"
+                            android:maxLines="5"
+                            android:textSize="14sp" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <ImageButton
+                        android:id="@+id/scan_qr_btn"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:src="@drawable/ic_qr_scan"
+                        android:contentDescription="@string/scan_qr_code"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        app:tint="@color/primary_color" />
+
+                </LinearLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/amount_layout"

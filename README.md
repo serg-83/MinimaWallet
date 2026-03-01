@@ -46,13 +46,13 @@ Seed Phrase → [locally] → Private Key + Address
 
 | Section | Description |
 |---|---|
-| 💰 **Wallet** | View balance, generate cryptographic keys and addresses |
-| 📤 **Send** | Send transactions to the Minima network with token selector |
+| 💰 **Wallet** | View balance, generate cryptographic keys and addresses, show address QR code |
+| 📤 **Send** | Send transactions with token selector, scan QR code (camera or image file) |
 | 🌐 **Explorer** | Built-in blockchain explorer with back/refresh navigation |
 | 🔒 **FutureCash** | Lock funds until a future date with time-lock scripts |
 | 📈 **Maximize** | Stake MINIMA for 1–12 months and earn guaranteed returns (0.5%–9%) |
 | 🔑 **Seed Phrase** | Securely store and manage your seed phrase (BIP39) |
-| ⚙️ **Settings** | Configure node URL |
+| ⚙️ **Settings** | Configure node URL, language (auto-detect system language) |
 | 🔒 **Biometrics** | Fingerprint authentication on startup |
 
 ### Working with API
@@ -210,13 +210,13 @@ Seed-фраза → [локально] → Приватный ключ + Адр�
 
 | Раздел | Описание |
 |---|---|
-| 💰 **Кошелёк** | Просмотр баланса, генерация криптографических ключей и адресов |
-| 📤 **Отправка** | Отправка транзакций с выбором токена |
+| 💰 **Кошелёк** | Просмотр баланса, генерация ключей и адресов, QR-код адреса |
+| 📤 **Отправка** | Отправка транзакций с выбором токена, сканирование QR-кода (камера или файл) |
 | 🌐 **Эксплорер** | Встроенный обозреватель блокчейна с навигацией назад/обновить |
 | 🔒 **FutureCash** | Блокировка средств до будущей даты через time-lock скрипты |
 | 📈 **Maximize** | Стейкинг MINIMA на 1–12 месяцев с гарантированным доходом (0.5%–9%) |
 | 🔑 **Seed-фраза** | Безопасное хранение и управление сид-фразой (BIP39) |
-| ⚙️ **Настройки** | Настройка URL узла |
+| ⚙️ **Настройки** | Настройка URL узла, язык (автоопределение системного языка) |
 | 🔒 **Биометрия** | Аутентификация по отпечатку пальца при запуске |
 
 ### Работа с API

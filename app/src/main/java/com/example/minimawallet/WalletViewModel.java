@@ -15,6 +15,7 @@ public class WalletViewModel extends ViewModel {
     private final MutableLiveData<KeyGenerator.KeyData> keyData = new MutableLiveData<>();
     private final MutableLiveData<String> seedPhrase = new MutableLiveData<>();
     private final MutableLiveData<List<String>> serverLog = new MutableLiveData<>(new ArrayList<>());
+    private String addressNumber = "";
 
     public LiveData<KeyGenerator.KeyData> getKeyData() {
         return keyData;
@@ -55,6 +56,9 @@ public class WalletViewModel extends ViewModel {
         }
         serverLog.setValue(updated);
     }
+
+    public String getAddressNumber() { return addressNumber; }
+    public void setAddressNumber(String num) { this.addressNumber = num; }
 
     public void clearServerLog() {
         serverLog.setValue(new ArrayList<>());

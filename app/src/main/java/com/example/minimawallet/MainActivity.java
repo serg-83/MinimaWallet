@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private void applySavedLanguage() {
         try {
             String savedLanguage = getSharedPreferences("app_settings", MODE_PRIVATE)
-                    .getString("app_language", "ru");
+                    .getString("app_language", getDefaultLanguage(this));
 
             Locale savedLocale = new Locale(savedLanguage);
             if (!currentLocale.getLanguage().equals(savedLocale.getLanguage())) {
@@ -301,10 +301,22 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    static String getDefaultLanguage(Context context) {
+        String systemLang;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            systemLang = context.getResources().getConfiguration().getLocales().get(0).getLanguage();
+        } else {
+            systemLang = context.getResources().getConfiguration().locale.getLanguage();
+        }
+        if ("ru".equals(systemLang)) return "ru";
+        return "en";
+    }
+
     @Override
     protected void attachBaseContext(Context newBase) {
+        String defaultLang = getDefaultLanguage(newBase);
         String savedLanguage = newBase.getSharedPreferences("app_settings", MODE_PRIVATE)
-                .getString("app_language", "ru");
+                .getString("app_language", defaultLang);
         Locale locale = new Locale(savedLanguage);
         Locale.setDefault(locale);
 

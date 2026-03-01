@@ -196,4 +196,13 @@
     <!-- Explorer -->
     <string name="explorer_back">Back</string>
     <string name="explorer_refresh">Refresh</string>
+
+    <!-- QR Code -->
+    <string name="show_qr_code">Show QR Code</string>
+    <string name="scan_qr_code">Scan QR Code</string>
+    <string name="qr_code_title">Your Address</string>
+    <string name="camera_permission_required">Camera permission is required to scan QR codes</string>
+    <string name="qr_scan_camera">Camera</string>
+    <string name="qr_scan_file">From file</string>
+    <string name="qr_decode_error">Could not read QR code from image</string>
 </resources>

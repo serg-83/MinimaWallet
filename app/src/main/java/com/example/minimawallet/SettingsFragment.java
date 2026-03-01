@@ -102,7 +102,8 @@ public class SettingsFragment extends Fragment {
             explorerUrlEdit.setText(savedExplorerUrl.equals(DEFAULT_EXPLORER_URL) ? "" : savedExplorerUrl);
         }
 
-        String savedLanguage = sharedPreferences.getString("app_language", "ru");
+        String savedLanguage = sharedPreferences.getString("app_language",
+                MainActivity.getDefaultLanguage(requireContext()));
         if (languageRadioGroup != null) {
             isLanguageSettingProgrammatically = true;
 
