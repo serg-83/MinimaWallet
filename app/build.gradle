@@ -17,8 +17,8 @@ android {
         applicationId "com.example.minimawallet"
         minSdk 26
         targetSdk 33
-        versionCode 7
-        versionName "1.8"
+        versionCode 8
+        versionName "1.9"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
