@@ -13,6 +13,7 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Build;
@@ -120,6 +121,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         try {
             secureStorage = new SecureStorage(this);
 
+            // Resolve UID from host at every app start
+            resolveUidOnStartup();
+
             if (secureStorage.hasSavedPhrase()) {
                 if (isBiometricAvailable()) {
                     showStartupBiometricPrompt();
@@ -137,6 +141,23 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } catch (Exception e) {
             navigateTo(new SeedPhraseFragment(), R.id.nav_seed_phrase);
         }
+    }
+
+    private void resolveUidOnStartup() {
+        SharedPreferences prefs = getSharedPreferences("app_settings", MODE_PRIVATE);
+        String host = prefs.getString("api_host", SettingsFragment.DEFAULT_HOST);
+
+        UidResolver.resolveApiUrl(host, new UidResolver.Callback() {
+            @Override
+            public void onSuccess(String apiUrl) {
+                prefs.edit().putString("api_url", apiUrl).apply();
+            }
+
+            @Override
+            public void onError(String message) {
+                // Keep old api_url if resolve fails; will retry next launch
+            }
+        });
     }
 
     private boolean isBiometricAvailable() {

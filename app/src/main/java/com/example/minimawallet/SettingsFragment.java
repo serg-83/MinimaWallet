@@ -3,6 +3,7 @@ package com.example.minimawallet;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,7 +20,7 @@ import com.google.android.material.textfield.TextInputEditText;
 
 public class SettingsFragment extends Fragment {
 
-    private static final String DEFAULT_API_URL = "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD";
+    static final String DEFAULT_HOST = "wallet.minima.global";
     private static final String DEFAULT_EXPLORER_URL = "https://explorer.minima.global/search?q=";
 
     private SecureStorage secureStorage;
@@ -31,6 +32,7 @@ public class SettingsFragment extends Fragment {
 
     private SharedPreferences sharedPreferences;
     private boolean isLanguageSettingProgrammatically = false;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @Nullable
     @Override
@@ -85,7 +87,7 @@ public class SettingsFragment extends Fragment {
         });
 
         apiUrlEdit.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) saveApiUrlSetting();
+            if (!hasFocus) saveApiHostSetting();
         });
         explorerUrlEdit.setOnFocusChangeListener((v, hasFocus) -> {
             if (!hasFocus) saveExplorerUrlSetting();
@@ -93,9 +95,9 @@ public class SettingsFragment extends Fragment {
     }
 
     private void loadSavedSettings() {
-        String savedApiUrl = sharedPreferences.getString("api_url", DEFAULT_API_URL);
+        String savedHost = sharedPreferences.getString("api_host", DEFAULT_HOST);
         if (apiUrlEdit != null) {
-            apiUrlEdit.setText(savedApiUrl.equals(DEFAULT_API_URL) ? "" : savedApiUrl);
+            apiUrlEdit.setText(savedHost.equals(DEFAULT_HOST) ? "" : savedHost);
         }
         String savedExplorerUrl = sharedPreferences.getString("explorer_url", DEFAULT_EXPLORER_URL);
         if (explorerUrlEdit != null) {
@@ -119,19 +121,45 @@ public class SettingsFragment extends Fragment {
         }
     }
 
-    private void saveApiUrlSetting() {
-        if (apiUrlEdit != null) {
-            String apiUrl = apiUrlEdit.getText().toString().trim();
-            if (apiUrl.isEmpty()) {
-                sharedPreferences.edit().putString("api_url", DEFAULT_API_URL).apply();
-                Toast.makeText(requireContext(), R.string.settings_saved, Toast.LENGTH_SHORT).show();
-            } else if (apiUrl.startsWith("http://") || apiUrl.startsWith("https://")) {
+    private void saveApiHostSetting() {
+        if (apiUrlEdit == null) return;
+
+        String input = apiUrlEdit.getText().toString().trim();
+        String host = input.isEmpty() ? DEFAULT_HOST : input;
+
+        // Strip protocol prefix if user accidentally added it
+        host = host.replaceFirst("^https?://", "");
+        // Strip trailing slash/path
+        int slashIdx = host.indexOf('/');
+        if (slashIdx > 0) host = host.substring(0, slashIdx);
+
+        sharedPreferences.edit().putString("api_host", host).apply();
+
+        Toast.makeText(requireContext(), R.string.uid_resolving, Toast.LENGTH_SHORT).show();
+
+        final String finalHost = host;
+        UidResolver.resolveApiUrl(finalHost, new UidResolver.Callback() {
+            @Override
+            public void onSuccess(String apiUrl) {
                 sharedPreferences.edit().putString("api_url", apiUrl).apply();
-                Toast.makeText(requireContext(), R.string.settings_saved, Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(requireContext(), R.string.url_validation_error, Toast.LENGTH_SHORT).show();
+                mainHandler.post(() -> {
+                    if (isAdded()) {
+                        Toast.makeText(requireContext(), R.string.uid_resolved, Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
-        }
+
+            @Override
+            public void onError(String message) {
+                mainHandler.post(() -> {
+                    if (isAdded()) {
+                        Toast.makeText(requireContext(),
+                                getString(R.string.uid_error) + ": " + message,
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+        });
     }
 
     private void saveExplorerUrlSetting() {
@@ -175,7 +203,7 @@ public class SettingsFragment extends Fragment {
         Toast.makeText(requireContext(), R.string.all_data_cleared, Toast.LENGTH_SHORT).show();
 
         if (apiUrlEdit != null) {
-            apiUrlEdit.setText(DEFAULT_API_URL);
+            apiUrlEdit.setText("");
         }
         if (languageRadioGroup != null) {
             isLanguageSettingProgrammatically = true;
