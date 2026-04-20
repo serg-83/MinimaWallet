@@ -52,35 +52,22 @@ Seed Phrase → [locally] → Private Key + Address
 | 🔒 **FutureCash** | Lock funds until a future date with time-lock scripts |
 | 📈 **Maximize** | Stake MINIMA for 1–12 months and earn guaranteed returns (0.5%–9%) |
 | 🔑 **Seed Phrase** | Securely store and manage your seed phrase (BIP39) |
-| ⚙️ **Settings** | Configure node URL, language (auto-detect system language) |
+| ⚙️ **Settings** | Configure server host (UID auto-resolved), language (auto-detect system language) |
 | 🔒 **Biometrics** | Fingerprint authentication on startup |
 
 ### Working with API
 
-By default, the app uses the public API endpoint:
+The app **automatically obtains the UID** (session ID) from the server at every launch. You only need to specify the server host — the app does the rest.
 
-```
-https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD
-```
+By default, the public server `wallet.minima.global` is used. **If the host field is left empty, this default server will be used.**
 
-This UID is permanent and does not change. **If the API URL field is left empty, this default endpoint will be used.**
-
-To use your own API endpoint:
+To use your own server:
 
 1. Make sure your server node has **Public Wallet** and **MegaMMR** enabled
-2. Open the Public Wallet in your browser
-3. Copy the full URL including the UID — it should look like:
-   ```
-   https://YOUR_IP:9003/mdscommand_/cmd?uid=YOUR_UID
-   ```
-4. Paste it into the Settings → API URL field
+2. Enter your server host in Settings → Server Host (e.g. `your-server.com:9003`)
+3. The app will automatically connect, fetch the UID, and configure the API
 
-> ⚠️ **Note:** The UID will most likely change after a server restart. You will need to update the URL in the app settings.
->
-> Example of a working API URL:
-> ```
-> https://spartacusrex.com:8888/mdscommand_/cmd?uid=0x12D2B61F...79C
-> ```
+> ℹ️ **How it works:** The app makes a GET request to `https://<host>/`, parses the `publicsessionid` from the HTML page, and builds the full API URL. The UID is refreshed on every app launch, so you don't need to update it manually after server restarts.
 
 ---
 
@@ -139,6 +126,7 @@ app/src/main/java/com/example/minimawallet/
 ├── LogFragment.java             # Server response log
 ├── WalletViewModel.java         # Shared state (LiveData)
 ├── KeyGenerator.java            # Key generation, tx building, staking
+├── UidResolver.java             # Auto-fetch UID from server host page
 └── SecureStorage.java           # Encrypted storage (Android Keystore)
 ```
 
@@ -216,35 +204,22 @@ Seed-фраза → [локально] → Приватный ключ + Адр�
 | 🔒 **FutureCash** | Блокировка средств до будущей даты через time-lock скрипты |
 | 📈 **Maximize** | Стейкинг MINIMA на 1–12 месяцев с гарантированным доходом (0.5%–9%) |
 | 🔑 **Seed-фраза** | Безопасное хранение и управление сид-фразой (BIP39) |
-| ⚙️ **Настройки** | Настройка URL узла, язык (автоопределение системного языка) |
+| ⚙️ **Настройки** | Настройка хоста сервера (UID определяется автоматически), язык (автоопределение системного языка) |
 | 🔒 **Биометрия** | Аутентификация по отпечатку пальца при запуске |
 
 ### Работа с API
 
-По умолчанию приложение использует публичный API-адрес:
+Приложение **автоматически получает UID** (идентификатор сессии) с сервера при каждом запуске. Вам нужно указать только хост сервера — всё остальное приложение сделает само.
 
-```
-https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD
-```
+По умолчанию используется публичный сервер `wallet.minima.global`. **Если поле хоста оставить пустым, будет использоваться этот сервер.**
 
-Этот UID постоянный и не меняется. **Если поле API URL оставить пустым, будет использоваться именно этот адрес.**
-
-Чтобы использовать собственный API-адрес:
+Чтобы использовать собственный сервер:
 
 1. Убедитесь, что на вашем сервере в ноде включены **Public Wallet** и **MegaMMR**
-2. Откройте Public Wallet в браузере
-3. Скопируйте полный адрес вместе с UID — он будет вида:
-   ```
-   https://ВАШ_IP:9003/mdscommand_/cmd?uid=ВАШ_UID
-   ```
-4. Вставьте его в настройках приложения → API URL
+2. Введите хост вашего сервера в Настройки → Хост сервера (например `your-server.com:9003`)
+3. Приложение автоматически подключится, получит UID и настроит API
 
-> ⚠️ **Важно:** После перезагрузки сервера UID скорее всего изменится. Вам нужно будет обновить URL в настройках приложения.
->
-> Пример рабочего API-адреса:
-> ```
-> https://spartacusrex.com:8888/mdscommand_/cmd?uid=0x12D2B61F...79C
-> ```
+> ℹ️ **Как это работает:** Приложение делает GET-запрос на `https://<host>/`, парсит `publicsessionid` из HTML-страницы и формирует полный URL для API. UID обновляется при каждом запуске приложения, поэтому вам не нужно менять его вручную после перезагрузки сервера.
 
 ---
 
