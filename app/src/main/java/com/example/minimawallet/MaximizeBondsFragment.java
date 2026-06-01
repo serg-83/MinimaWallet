@@ -21,7 +21,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.minima.utils.json.JSONArray;
 import org.minima.utils.json.JSONObject;
-import org.minima.utils.json.parser.JSONParser;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -94,14 +93,11 @@ public class MaximizeBondsFragment extends Fragment {
         if (loadingBar != null) loadingBar.setVisibility(View.VISIBLE);
         if (emptyText != null) emptyText.setVisibility(View.GONE);
 
-        String apiUrl = sharedPreferences.getString("api_url",
-                "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD");
+        final android.content.Context ctx = requireContext().getApplicationContext();
 
         executor.execute(() -> {
             try {
-                // Get current block
-                String blockResp = ApiHelper.post(apiUrl, "block");
-                currentBlock = parseBlock(blockResp);
+                currentBlock = MegApi.blockNumber(ctx);
 
                 KeyGenerator.KeyData kd = walletViewModel != null ? walletViewModel.getCurrentKeyData() : null;
                 String userHexAddr = kd != null ? kd.address : null;
@@ -119,19 +115,17 @@ public class MaximizeBondsFragment extends Fragment {
                     return;
                 }
 
-                // Query bonds at the Maximize bond address filtered by user's address in state
-                String coinsCmd = "coins address:" + BOND_ADDRESS + " state:" + userHexAddr + " megammr:true";
-                final String coinsCmdFinal = coinsCmd;
+                final String coinsCmdFinal = "listcoins address=" + BOND_ADDRESS + " state=" + userHexAddr;
                 if (getActivity() != null) getActivity().runOnUiThread(() -> {
                     if (walletViewModel != null) walletViewModel.addServerLog("maximize >> " + coinsCmdFinal);
                 });
-                String coinsResp = ApiHelper.post(apiUrl, coinsCmd);
-                final String coinsRespFinal = coinsResp;
+                JSONArray coinsArr = MegApi.listcoins(ctx, BOND_ADDRESS, userHexAddr, null);
+                final String coinsRespFinal = coinsArr.toJSONString();
                 if (getActivity() != null) getActivity().runOnUiThread(() -> {
                     if (walletViewModel != null) walletViewModel.addServerLog("maximize << " + coinsRespFinal);
                 });
 
-                List<MaximizeBond> parsed = parseBonds(coinsResp, currentBlock);
+                List<MaximizeBond> parsed = parseBondsArray(coinsArr, currentBlock);
 
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
@@ -164,59 +158,28 @@ public class MaximizeBondsFragment extends Fragment {
         });
     }
 
-    private long parseBlock(String response) {
-        try {
-            JSONParser parser = new JSONParser();
-            Object parsed = parser.parse(response);
-            if (parsed instanceof JSONObject) {
-                Object resp = ((JSONObject) parsed).get("response");
-                if (resp instanceof JSONObject) {
-                    Object block = ((JSONObject) resp).get("block");
-                    if (block != null) return Long.parseLong(block.toString());
-                }
-            }
-        } catch (Exception ignored) { }
-        return -1;
-    }
-
-    private List<MaximizeBond> parseBonds(String response, long block) {
+    private List<MaximizeBond> parseBondsArray(JSONArray arr, long block) {
         List<MaximizeBond> result = new ArrayList<>();
+        if (arr == null) return result;
         try {
-            JSONParser parser = new JSONParser();
-            Object parsed = parser.parse(response);
-            if (!(parsed instanceof JSONObject)) return result;
-            Object respObj = ((JSONObject) parsed).get("response");
-            if (!(respObj instanceof JSONArray)) return result;
-
-            JSONArray arr = (JSONArray) respObj;
             for (Object item : arr) {
                 if (!(item instanceof JSONObject)) continue;
                 JSONObject obj = (JSONObject) item;
 
+                // MEG returns state as a JSON object {"100":"...","101":"..."} keyed by port.
                 Object stateObj = obj.get("state");
-                if (!(stateObj instanceof JSONArray)) continue;
-                JSONArray state = (JSONArray) stateObj;
+                if (!(stateObj instanceof JSONObject)) continue;
+                JSONObject state = (JSONObject) stateObj;
 
-                String pubkey = null;
-                long maxBlock = -1;
-                String userAddress = null;
-                long maxCoinage = -1;
-                double rate = 0;
+                String pubkey      = stateValue(state, STATE_PUBKEY);
+                String userAddress = stateValue(state, STATE_USER_ADDRESS);
+                String mbVal       = stateValue(state, STATE_MAXBLOCK);
+                String mcVal       = stateValue(state, STATE_MAXCOINAGE);
+                String rateVal     = stateValue(state, STATE_RATE);
 
-                for (Object s : state) {
-                    if (!(s instanceof JSONObject)) continue;
-                    JSONObject entry = (JSONObject) s;
-                    Object portObj = entry.get("port");
-                    Object dataObj = entry.get("data");
-                    if (portObj == null || dataObj == null) continue;
-                    int port = Integer.parseInt(portObj.toString());
-                    String data = dataObj.toString();
-                    if (port == STATE_PUBKEY) pubkey = data;
-                    if (port == STATE_MAXBLOCK) maxBlock = Long.parseLong(data);
-                    if (port == STATE_USER_ADDRESS) userAddress = data;
-                    if (port == STATE_MAXCOINAGE) maxCoinage = Long.parseLong(data);
-                    if (port == STATE_RATE) rate = Double.parseDouble(data);
-                }
+                long maxBlock   = mbVal != null ? Long.parseLong(mbVal) : -1;
+                long maxCoinage = mcVal != null ? Long.parseLong(mcVal) : -1;
+                double rate     = rateVal != null ? Double.parseDouble(rateVal) : 0;
 
                 if (maxBlock < 0) continue;
 
@@ -268,6 +231,12 @@ public class MaximizeBondsFragment extends Fragment {
         return result;
     }
 
+    /** MEG state is an object keyed by port number as string. Returns the value or null. */
+    private static String stateValue(JSONObject state, int port) {
+        Object v = state.get(String.valueOf(port));
+        return v != null ? v.toString() : null;
+    }
+
     private void cancelBond(MaximizeBond bond) {
         KeyGenerator.KeyData kd = walletViewModel != null ? walletViewModel.getCurrentKeyData() : null;
         if (kd == null) {
@@ -275,14 +244,11 @@ public class MaximizeBondsFragment extends Fragment {
             return;
         }
 
-        String apiUrl = sharedPreferences.getString("api_url",
-                "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD");
-
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.maximize_cancel_confirm_title)
                 .setMessage(getString(R.string.maximize_cancel_confirm_msg, bond.amount))
                 .setPositiveButton(R.string.maximize_cancel_stake, (d, w) -> {
-                    KeyGenerator kg = new KeyGenerator(new KeyGenerator.KeyGeneratorCallback() {
+                    KeyGenerator kg = new KeyGenerator(requireContext(), new KeyGenerator.KeyGeneratorCallback() {
                         @Override public void onProgressUpdate(String message) {}
                         @Override public void onKeyGenerated(KeyGenerator.KeyData keyData) {}
                         @Override public void onTransactionCreated(String txId) {
@@ -301,7 +267,7 @@ public class MaximizeBondsFragment extends Fragment {
                             });
                         }
                     });
-                    kg.cancelMaximizeBond(apiUrl, kd, bond.coinId, bond.amount);
+                    kg.cancelMaximizeBond(null, kd, bond.coinId, bond.amount);
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();

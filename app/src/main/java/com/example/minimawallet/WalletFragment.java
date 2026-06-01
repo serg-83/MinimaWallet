@@ -80,7 +80,7 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
                         Context ctx = getContext();
                         if (ctx == null) return;
 
-                        keyGenerator = new KeyGenerator(this);
+                        keyGenerator = new KeyGenerator(ctx, this);
                         sharedPreferences = ctx.getSharedPreferences("app_settings", 0);
 
                         if (getActivity() != null) {
@@ -220,15 +220,11 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
         if (refreshBalanceBtn != null) refreshBalanceBtn.setEnabled(false);
         if (progressText != null) progressText.setText(R.string.checking_balance);
 
-        String apiUrl = sharedPreferences != null
-                ? sharedPreferences.getString("api_url", "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD")
-                : "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD";
-
         if (addressNumberEdit != null && !addressNumberEdit.getText().toString().isEmpty()) {
             try {
                 int addressNumber = Integer.parseInt(addressNumberEdit.getText().toString());
                 if (keyGenerator != null) {
-                    keyGenerator.initialize(apiUrl, phrase, addressNumber);
+                    keyGenerator.initialize(null, phrase, addressNumber);
                 }
             } catch (NumberFormatException e) {
                 if (refreshBalanceBtn != null) refreshBalanceBtn.setEnabled(true);
@@ -268,9 +264,7 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
         try {
             int addressNumber = Integer.parseInt(addressNumberStr);
             if (keyGenerator != null) {
-                String apiUrl = sharedPreferences.getString("api_url",
-                        "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD");
-                keyGenerator.initialize(apiUrl, phrase, addressNumber);
+                keyGenerator.initialize(null, phrase, addressNumber);
                 if (generateKeysBtn != null) {
                     generateKeysBtn.setEnabled(false);
                     generateKeysBtn.setText(R.string.generating);

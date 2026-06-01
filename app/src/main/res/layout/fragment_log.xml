@@ -51,6 +51,17 @@
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/copy_log_btn"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="6dp"
+                app:icon="@drawable/ic_copy"
+                app:iconTint="@color/on_card_label"
+                app:iconSize="22dp"
+                android:contentDescription="@string/log_copy" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/clear_log_btn"
                 style="@style/Widget.Material3.Button.IconButton"
                 android:layout_width="40dp"

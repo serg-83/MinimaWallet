@@ -52,7 +52,7 @@
     <string name="settings_title">Settings</string>
     <string name="api_settings">API Settings</string>
     <string name="api_url">Server Host</string>
-    <string name="api_url_hint">wallet.minima.global</string>
+    <string name="api_url_hint">minimask.org:8888</string>
     <string name="explorer_url_hint">Explorer URL (e.g.: https://explorer.minima.global/search?q=)</string>
     <string name="language_settings">Language Settings</string>
     <string name="select_language">Select Language</string>
@@ -121,9 +121,6 @@
     <string name="keystore_not_available">KeyStore not available</string>
     <string name="save_error">Save error</string>
     <string name="url_validation_error">URL must start with http:// or https://</string>
-    <string name="uid_resolving">Connecting to server…</string>
-    <string name="uid_resolved">Connected, UID received</string>
-    <string name="uid_error">Connection error</string>
 
     <!-- Navigation Drawer -->
     <string name="drawer_wallet">Wallet</string>
@@ -142,6 +139,8 @@
     <string name="log_title">Server Log</string>
     <string name="log_empty">Log is empty. Make a server request first.</string>
     <string name="log_clear">Clear log</string>
+    <string name="log_copy">Copy all logs</string>
+    <string name="log_copied">Logs copied to clipboard</string>
     <string name="log_entries_suffix">entries</string>
     <string name="tokens_title">All Tokens</string>
     <string name="select_token">Select token</string>

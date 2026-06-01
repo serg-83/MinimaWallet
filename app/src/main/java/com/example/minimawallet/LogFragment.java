@@ -1,10 +1,15 @@
 package com.example.minimawallet;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -25,6 +30,7 @@ public class LogFragment extends Fragment {
     private TextView logEmptyText;
     private TextView logCountText;
     private LogAdapter adapter;
+    private List<String> currentEntries = new ArrayList<>();
 
     @Nullable
     @Override
@@ -43,14 +49,17 @@ public class LogFragment extends Fragment {
         logEmptyText = view.findViewById(R.id.log_empty_text);
         logCountText = view.findViewById(R.id.log_count_text);
         MaterialButton clearBtn = view.findViewById(R.id.clear_log_btn);
+        MaterialButton copyBtn = view.findViewById(R.id.copy_log_btn);
 
         adapter = new LogAdapter();
         logRecycler.setLayoutManager(new LinearLayoutManager(requireContext()));
         logRecycler.setAdapter(adapter);
 
         clearBtn.setOnClickListener(v -> walletViewModel.clearServerLog());
+        copyBtn.setOnClickListener(v -> copyAllLogs());
 
         walletViewModel.getServerLog().observe(getViewLifecycleOwner(), entries -> {
+            currentEntries = entries != null ? entries : new ArrayList<>();
             if (entries == null || entries.isEmpty()) {
                 logRecycler.setVisibility(View.GONE);
                 logEmptyText.setVisibility(View.VISIBLE);
@@ -62,6 +71,17 @@ public class LogFragment extends Fragment {
                 adapter.setEntries(entries);
             }
         });
+    }
+
+    private void copyAllLogs() {
+        if (currentEntries.isEmpty()) return;
+        String all = TextUtils.join("\n", currentEntries);
+        ClipboardManager cm = (ClipboardManager) requireContext()
+                .getSystemService(Context.CLIPBOARD_SERVICE);
+        if (cm != null) {
+            cm.setPrimaryClip(ClipData.newPlainText("Minima logs", all));
+            Toast.makeText(requireContext(), R.string.log_copied, Toast.LENGTH_SHORT).show();
+        }
     }
 
     // --- Adapter ---

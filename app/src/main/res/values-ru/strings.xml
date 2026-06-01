@@ -52,7 +52,7 @@
     <string name="settings_title">Настройки</string>
     <string name="api_settings">Настройки API</string>
     <string name="api_url">Хост сервера</string>
-    <string name="api_url_hint">wallet.minima.global</string>
+    <string name="api_url_hint">minimask.org:8888</string>
     <string name="explorer_url_hint">URL Explorer (например: https://explorer.minima.global/search?q=)</string>
     <string name="language_settings">Настройки языка</string>
     <string name="select_language">Выберите язык</string>
@@ -121,9 +121,6 @@
     <string name="keystore_not_available">KeyStore недоступен</string>
     <string name="save_error">Ошибка сохранения</string>
     <string name="url_validation_error">URL должен начинаться с http:// или https://</string>
-    <string name="uid_resolving">Подключение к серверу…</string>
-    <string name="uid_resolved">Подключено, UID получен</string>
-    <string name="uid_error">Ошибка подключения</string>
 
     <!-- Navigation Drawer -->
     <string name="drawer_wallet">Кошелёк</string>
@@ -142,6 +139,8 @@
     <string name="log_title">Лог сервера</string>
     <string name="log_empty">Логи пусты. Выполните запрос к серверу.</string>
     <string name="log_clear">Очистить лог</string>
+    <string name="log_copy">Скопировать все логи</string>
+    <string name="log_copied">Логи скопированы в буфер обмена</string>
     <string name="log_entries_suffix">записей</string>
     <string name="tokens_title">Все токены</string>
     <string name="select_token">Выберите токен</string>

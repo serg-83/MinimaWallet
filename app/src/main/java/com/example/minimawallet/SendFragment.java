@@ -103,7 +103,7 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
             initializeViews(view);
             setupClickListeners();
 
-            keyGenerator = new KeyGenerator(this);
+            keyGenerator = new KeyGenerator(requireContext(), this);
             sharedPreferences = requireContext().getSharedPreferences("app_settings", 0);
 
             walletViewModel = new ViewModelProvider(requireActivity()).get(WalletViewModel.class);
@@ -378,10 +378,8 @@ public class SendFragment extends Fragment implements KeyGenerator.KeyGeneratorC
 
         if (currentKeyData != null && sendTransactionBtn != null) {
             isTransactionInProgress = true;
-            String apiUrl = sharedPreferences.getString("api_url",
-                    "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD");
             keyGenerator.sendTransaction(
-                    apiUrl,
+                    null,
                     currentKeyData.miniAddress,
                     toAddress,
                     amount,

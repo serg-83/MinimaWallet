@@ -21,7 +21,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.minima.utils.json.JSONArray;
 import org.minima.utils.json.JSONObject;
-import org.minima.utils.json.parser.JSONParser;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -98,18 +97,14 @@ public class FutureCoinsFragment extends Fragment {
         if (loadingBar != null) loadingBar.setVisibility(View.VISIBLE);
         if (emptyText != null) emptyText.setVisibility(View.GONE);
 
-        String apiUrl = sharedPreferences.getString("api_url",
-                "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD");
+        final android.content.Context ctx = requireContext().getApplicationContext();
 
         executor.execute(() -> {
             try {
-                // 1. Get current block + script address in one batch
-                String batchResp = ApiHelper.post(apiUrl,
-                        "block;" +
-                        "newscript script:\"RETURN (@BLOCK GTE PREVSTATE(1) OR @COINAGE GTE PREVSTATE(4)) AND VERIFYOUT(@INPUT PREVSTATE(2) @AMOUNT @TOKENID FALSE)\" trackall:false");
-
-                String scriptAddress = parseScriptAddress(batchResp);
-                currentBlock = parseBlockFromBatch(batchResp);
+                // 1. Current block from MEG; script address computed locally.
+                currentBlock = MegApi.blockNumber(ctx);
+                String scriptAddress = ScriptAddress.hex(
+                        "RETURN (@BLOCK GTE PREVSTATE(1) OR @COINAGE GTE PREVSTATE(4)) AND VERIFYOUT(@INPUT PREVSTATE(2) @AMOUNT @TOKENID FALSE)");
 
                 // 2. Get locked coins filtered by script address + state port2 (recipient) + megammr
                 KeyGenerator.KeyData kd = walletViewModel != null ? walletViewModel.getCurrentKeyData() : null;
@@ -138,13 +133,12 @@ public class FutureCoinsFragment extends Fragment {
                     }
                     return;
                 }
-                String coinsCmd = "coins address:" + scriptAddress + " state:" + userHexAddr + " megammr:true";
-                final String coinsCmdFinal = coinsCmd;
+                final String coinsCmdFinal = "listcoins address=" + scriptAddress + " state=" + userHexAddr;
                 if (getActivity() != null) getActivity().runOnUiThread(() -> { if (walletViewModel != null) walletViewModel.addServerLog("coins >> " + coinsCmdFinal); });
-                String coinsResp = ApiHelper.post(apiUrl, coinsCmd);
-                final String coinsRespFinal = coinsResp;
+                JSONArray coinsArr = MegApi.listcoins(ctx, scriptAddress, userHexAddr, null);
+                final String coinsRespFinal = coinsArr.toJSONString();
                 if (getActivity() != null) getActivity().runOnUiThread(() -> { if (walletViewModel != null) walletViewModel.addServerLog("coins << " + coinsRespFinal); });
-                List<FutureCoin> parsed = parseCoins(coinsResp, currentBlock);
+                List<FutureCoin> parsed = parseCoinsArray(coinsArr, currentBlock);
                 final int parsedCount = parsed.size();
                 if (getActivity() != null) getActivity().runOnUiThread(() -> { if (walletViewModel != null) walletViewModel.addServerLog("coins parsed: " + parsedCount); });
 
@@ -176,93 +170,24 @@ public class FutureCoinsFragment extends Fragment {
         });
     }
 
-    /** Parses block number from a single "block" command response. */
-    private long parseBlock(String response) {
-        try {
-            JSONParser parser = new JSONParser();
-            Object parsed = parser.parse(response);
-            if (parsed instanceof JSONObject) {
-                Object resp = ((JSONObject) parsed).get("response");
-                if (resp instanceof JSONObject) {
-                    Object block = ((JSONObject) resp).get("block");
-                    if (block != null) return Long.parseLong(block.toString());
-                }
-            }
-        } catch (Exception ignored) { }
-        return -1;
-    }
-
-    /** Parses block number from a batch response array (first item = block command). */
-    private long parseBlockFromBatch(String response) {
-        try {
-            JSONParser parser = new JSONParser();
-            Object parsed = parser.parse(response);
-            if (parsed instanceof JSONArray) {
-                Object first = ((JSONArray) parsed).get(0);
-                if (first instanceof JSONObject) {
-                    return parseBlock(first.toString());
-                }
-            }
-            // Fallback: single response
-            return parseBlock(response);
-        } catch (Exception ignored) { }
-        return -1;
-    }
-
-    /** Parses script address from a batch response array (second item = newscript command). */
-    private String parseScriptAddress(String response) {
-        try {
-            JSONParser parser = new JSONParser();
-            Object parsed = parser.parse(response);
-            if (parsed instanceof JSONArray) {
-                JSONArray arr = (JSONArray) parsed;
-                if (arr.size() >= 2) {
-                    Object second = arr.get(1);
-                    if (second instanceof JSONObject) {
-                        Object resp = ((JSONObject) second).get("response");
-                        if (resp instanceof JSONObject) {
-                            Object addr = ((JSONObject) resp).get("address");
-                            if (addr != null) return addr.toString();
-                        }
-                    }
-                }
-            }
-        } catch (Exception ignored) { }
-        return null;
-    }
-
-    private List<FutureCoin> parseCoins(String response, long block) {
+    private List<FutureCoin> parseCoinsArray(JSONArray arr, long block) {
         List<FutureCoin> result = new ArrayList<>();
+        if (arr == null) return result;
         try {
-            JSONParser parser = new JSONParser();
-            Object parsed = parser.parse(response);
-            if (!(parsed instanceof JSONObject)) return result;
-            Object respObj = ((JSONObject) parsed).get("response");
-            if (!(respObj instanceof JSONArray)) return result;
-
-            JSONArray arr = (JSONArray) respObj;
             for (Object item : arr) {
                 if (!(item instanceof JSONObject)) continue;
                 JSONObject obj = (JSONObject) item;
 
-                // Only process coins that have state data (FutureCash coins)
+                // Only process coins that have state data (FutureCash coins).
+                // MEG returns state as a JSON object {"1":"...","2":"..."} keyed by port.
                 Object stateObj = obj.get("state");
-                if (!(stateObj instanceof JSONArray)) continue;
-                JSONArray state = (JSONArray) stateObj;
+                if (!(stateObj instanceof JSONObject)) continue;
+                JSONObject state = (JSONObject) stateObj;
 
-                long targetBlock = -1;
-                long targetMs = -1;
-
-                for (Object s : state) {
-                    if (!(s instanceof JSONObject)) continue;
-                    JSONObject entry = (JSONObject) s;
-                    Object portObj = entry.get("port");
-                    Object dataObj = entry.get("data");
-                    if (portObj == null || dataObj == null) continue;
-                    int port = Integer.parseInt(portObj.toString());
-                    if (port == STATE_TARGET_BLOCK) targetBlock = Long.parseLong(dataObj.toString());
-                    if (port == STATE_TARGET_MS)    targetMs    = Long.parseLong(dataObj.toString());
-                }
+                String tbVal = stateValue(state, STATE_TARGET_BLOCK);
+                String tmVal = stateValue(state, STATE_TARGET_MS);
+                long targetBlock = tbVal != null ? Long.parseLong(tbVal) : -1;
+                long targetMs    = tmVal != null ? Long.parseLong(tmVal) : -1;
 
                 if (targetBlock < 0) continue;
 
@@ -285,15 +210,20 @@ public class FutureCoinsFragment extends Fragment {
         return result;
     }
 
+    /** MEG state is an object keyed by port number as string. Returns the value or null. */
+    private static String stateValue(JSONObject state, int port) {
+        Object v = state.get(String.valueOf(port));
+        return v != null ? v.toString() : null;
+    }
+
     private void collectCoin(FutureCoin coin) {
-        KeyGenerator.KeyData kd = walletViewModel != null ? walletViewModel.getCurrentKeyData() : null;
+        final KeyGenerator.KeyData kd = walletViewModel != null ? walletViewModel.getCurrentKeyData() : null;
         if (kd == null) {
             Toast.makeText(requireContext(), R.string.generate_keys_first, Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String apiUrl = sharedPreferences.getString("api_url",
-                "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD");
+        final android.content.Context ctx = requireContext().getApplicationContext();
 
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.future_collect_confirm_title)
@@ -301,50 +231,50 @@ public class FutureCoinsFragment extends Fragment {
                 .setPositiveButton(R.string.future_collect, (d, w) -> {
                     executor.execute(() -> {
                         try {
-                            // Build and post the raw transaction to collect the coin
-                            // txncreate → txninput → txnoutput → txnbasics → txnsign → txnpost → txndelete
-                            String txId = "futurecollect_" + System.currentTimeMillis();
+                            String script = "RETURN (@BLOCK GTE PREVSTATE(1) OR @COINAGE GTE PREVSTATE(4)) AND VERIFYOUT(@INPUT PREVSTATE(2) @AMOUNT @TOKENID FALSE)";
 
-                            String cmds =
-                                    "txncreate id:" + txId + ";" +
-                                    "txninput id:" + txId + " coinid:" + coin.coinId + ";" +
-                                    "txnoutput id:" + txId +
-                                        " amount:" + coin.amount +
-                                        " address:" + kd.miniAddress +
-                                        " tokenid:" + coin.tokenId +
-                                        " storestate:false;" +
-                                    "txnbasics id:" + txId + ";" +
-                                    "txnpost id:" + txId + ";" +
-                                    "txndelete id:" + txId;
+                            JSONArray inputs = new JSONArray();
+                            inputs.add(coin.coinId);
 
-                            String resp = ApiHelper.post(apiUrl, cmds);
-                            final String respFinal = resp;
-                            boolean success = resp != null && resp.contains("\"status\":true");
-                            if (getActivity() != null) {
-                                getActivity().runOnUiThread(() -> {
-                                    if (walletViewModel != null) walletViewModel.addServerLog("collect >> " + cmds + "\ncollect << " + respFinal);
-                                    if (!isAdded()) return;
-                                    Toast.makeText(requireContext(),
-                                            success ? R.string.future_collected_ok : R.string.future_collect_error,
-                                            Toast.LENGTH_SHORT).show();
-                                    loadCoins();
-                                });
+                            JSONArray scripts = new JSONArray();
+                            scripts.add(script);
+
+                            JSONArray outputs = new JSONArray();
+                            JSONObject out = new JSONObject();
+                            out.put("address", kd.miniAddress);
+                            out.put("amount", coin.amount);
+                            out.put("tokenid", coin.tokenId);
+                            outputs.add(out);
+
+                            String unsignedHex = MegApi.rawTxn(ctx, inputs, outputs, scripts, null);
+                            if (unsignedHex == null || unsignedHex.isEmpty()) {
+                                postCollectResult(false, "no unsigned tx");
+                                return;
                             }
-                        } catch (Exception e) {
-                            final String err = e.getMessage();
-                            if (getActivity() != null) {
-                                getActivity().runOnUiThread(() -> {
-                                    if (walletViewModel != null) walletViewModel.addServerLog("collect error: " + err);
-                                    if (isAdded())
-                                        Toast.makeText(requireContext(),
-                                                R.string.future_collect_error, Toast.LENGTH_SHORT).show();
-                                });
-                            }
+                            // Time-lock script has no SIGNEDBY: spend authorized by @BLOCK/@COINAGE,
+                            // so the unsigned tx is posted directly without a signature.
+                            JSONObject resp = MegApi.postTxn(ctx, unsignedHex);
+                            boolean success = "true".equals(String.valueOf(resp.get("status")));
+                            postCollectResult(success, resp.toJSONString());
+                        } catch (Throwable e) {
+                            postCollectResult(false, "error: " + e);
                         }
                     });
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    private void postCollectResult(boolean success, String detail) {
+        if (getActivity() == null) return;
+        getActivity().runOnUiThread(() -> {
+            if (walletViewModel != null) walletViewModel.addServerLog("collect << " + detail);
+            if (!isAdded()) return;
+            Toast.makeText(requireContext(),
+                    success ? R.string.future_collected_ok : R.string.future_collect_error,
+                    Toast.LENGTH_SHORT).show();
+            if (success) loadCoins();
+        });
     }
 
     // --- RecyclerView Adapter ---

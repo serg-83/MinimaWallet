@@ -87,3 +87,9 @@ lint/tmp/
 
 # Claude Code
 CLAUDE.md
+
+# Claude Code local files
+.claude/
+
+# Runtime app log
+log.txt

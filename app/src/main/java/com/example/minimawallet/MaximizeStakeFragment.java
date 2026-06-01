@@ -84,7 +84,7 @@ public class MaximizeStakeFragment extends Fragment implements KeyGenerator.KeyG
         stakeBtn = view.findViewById(R.id.maximize_stake_btn);
 
         sharedPreferences = requireContext().getSharedPreferences("app_settings", 0);
-        keyGenerator = new KeyGenerator(this);
+        keyGenerator = new KeyGenerator(requireContext(), this);
 
         walletViewModel = new ViewModelProvider(requireActivity()).get(WalletViewModel.class);
         walletViewModel.getKeyData().observe(getViewLifecycleOwner(), kd -> updateWalletCard());
@@ -116,9 +116,7 @@ public class MaximizeStakeFragment extends Fragment implements KeyGenerator.KeyG
     }
 
     private void loadCurrentBlock() {
-        String apiUrl = sharedPreferences.getString("api_url",
-                "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD");
-        keyGenerator.getBlockNumber(apiUrl);
+        keyGenerator.getBlockNumber(null);
     }
 
     private void updateWalletCard() {
@@ -228,14 +226,11 @@ public class MaximizeStakeFragment extends Fragment implements KeyGenerator.KeyG
         int months = TIMEFRAME_MONTHS[selectedTimeframeIndex];
         double rate = RATES[selectedTimeframeIndex];
 
-        String apiUrl = sharedPreferences.getString("api_url",
-                "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD");
-
         isSending = true;
         stakeBtn.setEnabled(false);
         stakeBtn.setText(R.string.sending);
 
-        keyGenerator.sendMaximizeStake(apiUrl, kd, amount, months, rate, currentBlock);
+        keyGenerator.sendMaximizeStake(null, kd, amount, months, rate, currentBlock);
     }
 
     // --- KeyGeneratorCallback ---

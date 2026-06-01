@@ -95,7 +95,7 @@ public class FutureSendFragment extends Fragment implements KeyGenerator.KeyGene
         sendBtn = view.findViewById(R.id.future_send_btn);
 
         sharedPreferences = requireContext().getSharedPreferences("app_settings", 0);
-        keyGenerator = new KeyGenerator(this);
+        keyGenerator = new KeyGenerator(requireContext(), this);
 
         walletViewModel = new ViewModelProvider(requireActivity()).get(WalletViewModel.class);
         walletViewModel.getKeyData().observe(getViewLifecycleOwner(), kd -> {
@@ -127,9 +127,7 @@ public class FutureSendFragment extends Fragment implements KeyGenerator.KeyGene
     }
 
     private void loadCurrentBlock() {
-        String apiUrl = sharedPreferences.getString("api_url",
-                "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD");
-        keyGenerator.getBlockNumber(apiUrl);
+        keyGenerator.getBlockNumber(null);
     }
 
     private void showDateTimePicker() {
@@ -288,14 +286,11 @@ public class FutureSendFragment extends Fragment implements KeyGenerator.KeyGene
                 + "\"3\":\"" + targetMs + "\", "
                 + "\"4\":\"" + coinage + "\"}";
 
-        String apiUrl = sharedPreferences.getString("api_url",
-                "https://wallet.minima.global/mdscommand_/cmd?uid=0xFFEEDD");
-
         isSending = true;
         sendBtn.setEnabled(false);
         sendBtn.setText(R.string.sending);
 
-        keyGenerator.sendFutureTransaction(apiUrl, kd, amount, token.tokenId, script, stateJson);
+        keyGenerator.sendFutureTransaction(null, kd, amount, token.tokenId, script, stateJson);
     }
 
     // --- KeyGeneratorCallback ---

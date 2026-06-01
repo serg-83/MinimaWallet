@@ -26,15 +26,19 @@
         android:id="@+id/group_products"
         android:checkableBehavior="single">
 
+        <!-- Coming soon: hidden from UI until time-lock MMR-proof flow is supported.
+             Handlers in MainActivity are kept intact. -->
         <item
             android:id="@+id/nav_future"
             android:icon="@drawable/ic_future"
-            android:title="@string/drawer_future" />
+            android:title="@string/drawer_future"
+            android:visible="false" />
 
         <item
             android:id="@+id/nav_maximize"
             android:icon="@drawable/ic_maximize"
-            android:title="@string/drawer_maximize" />
+            android:title="@string/drawer_maximize"
+            android:visible="false" />
 
     </group>
 

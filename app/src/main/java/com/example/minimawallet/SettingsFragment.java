@@ -20,7 +20,7 @@ import com.google.android.material.textfield.TextInputEditText;
 
 public class SettingsFragment extends Fragment {
 
-    static final String DEFAULT_HOST = "wallet.minima.global";
+    static final String DEFAULT_HOST = "minimask.org:8888";
     private static final String DEFAULT_EXPLORER_URL = "https://explorer.minima.global/search?q=";
 
     private SecureStorage secureStorage;
@@ -133,33 +133,9 @@ public class SettingsFragment extends Fragment {
         int slashIdx = host.indexOf('/');
         if (slashIdx > 0) host = host.substring(0, slashIdx);
 
-        sharedPreferences.edit().putString("api_host", host).apply();
+        sharedPreferences.edit().putString("api_host", host).remove("api_url").apply();
 
-        Toast.makeText(requireContext(), R.string.uid_resolving, Toast.LENGTH_SHORT).show();
-
-        final String finalHost = host;
-        UidResolver.resolveApiUrl(finalHost, new UidResolver.Callback() {
-            @Override
-            public void onSuccess(String apiUrl) {
-                sharedPreferences.edit().putString("api_url", apiUrl).apply();
-                mainHandler.post(() -> {
-                    if (isAdded()) {
-                        Toast.makeText(requireContext(), R.string.uid_resolved, Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-
-            @Override
-            public void onError(String message) {
-                mainHandler.post(() -> {
-                    if (isAdded()) {
-                        Toast.makeText(requireContext(),
-                                getString(R.string.uid_error) + ": " + message,
-                                Toast.LENGTH_LONG).show();
-                    }
-                });
-            }
-        });
+        Toast.makeText(requireContext(), R.string.settings_saved, Toast.LENGTH_SHORT).show();
     }
 
     private void saveExplorerUrlSetting() {
