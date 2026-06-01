@@ -357,6 +357,7 @@ public class WalletFragment extends Fragment implements KeyGenerator.KeyGenerato
                 if (!filtered.isEmpty()) {
                     tokenAdapter.setTokens(filtered);
                     tokensCard.setVisibility(View.VISIBLE);
+                    if (tokensRecycler != null) tokensRecycler.requestLayout();
                 } else {
                     tokensCard.setVisibility(View.GONE);
                 }
