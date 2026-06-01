@@ -17,6 +17,14 @@
 
 ---
 
+> ### 📢 v2.1 — переход на MEG REST API / migration to MEG REST API
+>
+> **EN:** The app now talks to the network through the **MEG REST API** (`https://<host>/wallet/*`) instead of the old MDS host. Because MEG's command set does not expose the operations required for the time-lock and staking flows, the **FutureCash** and **Maximize** features are temporarily **disabled** (hidden in the UI). Their code remains in the project and will return once the corresponding MEG endpoints are available.
+>
+> **RU:** Приложение перешло на **MEG REST API** (`https://<host>/wallet/*`) вместо старого MDS-хоста. Поскольку набор команд MEG не предоставляет операций, необходимых для time-lock и стейкинга, функции **FutureCash** и **Maximize** временно **отключены** (скрыты в интерфейсе). Их код остаётся в проекте и вернётся, как только появятся соответствующие endpoint'ы MEG.
+
+---
+
 ## English
 
 ### About
@@ -31,9 +39,8 @@ Seed Phrase → [locally] → Private Key + Address
             ┌─────────────────────┼─────────────────────┐
             ▼                     ▼                     ▼
      Request balance      Get unsigned transaction   Broadcast signed
-    wallet.minima.global   wallet.minima.global      transaction
-          (API)                  (API)            wallet.minima.global
-                                  │                    (API)
+     MEG /wallet/balance   MEG /wallet/unsignedtxn    transaction
+                                  │              MEG /wallet/posttxn
                                   ▼
                        [locally, no internet]
                         Sign transaction with
@@ -49,25 +56,21 @@ Seed Phrase → [locally] → Private Key + Address
 | 💰 **Wallet** | View balance, generate cryptographic keys and addresses, show address QR code |
 | 📤 **Send** | Send transactions with token selector, scan QR code (camera or image file) |
 | 🌐 **Explorer** | Built-in blockchain explorer with back/refresh navigation |
-| 🔒 **FutureCash** | Lock funds until a future date with time-lock scripts |
-| 📈 **Maximize** | Stake MINIMA for 1–12 months and earn guaranteed returns (0.5%–9%) |
+| 🔒 ~~**FutureCash**~~ | *Temporarily disabled* — time-lock flow not supported by the MEG API (code retained) |
+| 📈 ~~**Maximize**~~ | *Temporarily disabled* — staking flow not supported by the MEG API (code retained) |
 | 🔑 **Seed Phrase** | Securely store and manage your seed phrase (BIP39) |
-| ⚙️ **Settings** | Configure server host (UID auto-resolved), language (auto-detect system language) |
+| ⚙️ **Settings** | Configure MEG server host, language (auto-detect system language) |
 | 🔒 **Biometrics** | Fingerprint authentication on startup |
 
 ### Working with API
 
-The app **automatically obtains the UID** (session ID) from the server at every launch. You only need to specify the server host — the app does the rest.
+The app communicates with the network over the **MEG REST API**. Each command is a `POST` to `https://<host>/wallet/<endpoint>` (e.g. `/wallet/balance`, `/wallet/unsignedtxn`, `/wallet/posttxn`) with `application/x-www-form-urlencoded` body and HTTP Basic Auth. No UID/session resolution is needed.
 
-By default, the public server `wallet.minima.global` is used. **If the host field is left empty, this default server will be used.**
+By default the host `minimask.org:8888` is used. **If the host field is left empty, this default host will be used.**
 
-To use your own server:
+To use your own server, enter its MEG host in Settings → Server Host (e.g. `your-server.com:8888`).
 
-1. Make sure your server node has **Public Wallet** and **MegaMMR** enabled
-2. Enter your server host in Settings → Server Host (e.g. `your-server.com:9003`)
-3. The app will automatically connect, fetch the UID, and configure the API
-
-> ℹ️ **How it works:** The app makes a GET request to `https://<host>/`, parses the `publicsessionid` from the HTML page, and builds the full API URL. The UID is refreshed on every app launch, so you don't need to update it manually after server restarts.
+> ℹ️ **Note:** Because the MEG command set does not expose the operations required for time-lock (FutureCash) and staking (Maximize), those two features are currently disabled. The endpoints in use are documented in the project's migration notes.
 
 ---
 
@@ -99,7 +102,7 @@ The app works with **one address number at a time**. You can generate any addres
 
 ### Security
 
-- **No node required** — the app works via the public API `wallet.minima.global`
+- **No node required** — the app works via the MEG REST API
 - **Keys on-the-fly** — private key is derived from the seed phrase each time and never stored
 - **Offline signing** — transactions are signed locally on the device, the key is never sent over the network
 - Seed phrase stored **exclusively** in Android Keystore encrypted storage (AES-256-GCM)
@@ -115,18 +118,20 @@ app/src/main/java/com/example/minimawallet/
 ├── WalletFragment.java          # Balance, key generation, token list
 ├── SendFragment.java            # Send transactions with token selector
 ├── ExplorerFragment.java        # Built-in blockchain explorer (WebView)
-├── FutureCashFragment.java      # FutureCash tabs container
-├── FutureSendFragment.java      # Create time-locked transactions
-├── FutureCoinsFragment.java     # List/collect locked coins
-├── MaximizeFragment.java        # Maximize (staking) tabs container
-├── MaximizeStakeFragment.java   # Stake MINIMA for 1-12 months
-├── MaximizeBondsFragment.java   # List/cancel active stakes
+├── FutureCashFragment.java      # FutureCash tabs container (disabled in UI)
+├── FutureSendFragment.java      # Create time-locked transactions (disabled in UI)
+├── FutureCoinsFragment.java     # List/collect locked coins (disabled in UI)
+├── MaximizeFragment.java        # Maximize (staking) tabs container (disabled in UI)
+├── MaximizeStakeFragment.java   # Stake MINIMA for 1-12 months (disabled in UI)
+├── MaximizeBondsFragment.java   # List/cancel active stakes (disabled in UI)
 ├── SeedPhraseFragment.java      # Seed phrase management
 ├── SettingsFragment.java        # Settings
 ├── LogFragment.java             # Server response log
 ├── WalletViewModel.java         # Shared state (LiveData)
 ├── KeyGenerator.java            # Key generation, tx building, staking
-├── UidResolver.java             # Auto-fetch UID from server host page
+├── ApiHelper.java               # MEG REST client (Basic Auth, form-urlencoded)
+├── MegApi.java                  # Typed MEG endpoint wrappers
+├── ScriptAddress.java           # Local script-address computation
 └── SecureStorage.java           # Encrypted storage (Android Keystore)
 ```
 
@@ -182,9 +187,8 @@ Seed-фраза → [локально] → Приватный ключ + Адр�
               ┌─────────────────────┼─────────────────────┐
               ▼                     ▼                     ▼
      Запрос баланса       Получение неподписанной    Отправка подписанной
-    wallet.minima.global      транзакции              транзакции
-         (API)             wallet.minima.global     wallet.minima.global
-                                (API)                    (API)
+    MEG /wallet/balance       транзакции              транзакции
+                          MEG /wallet/unsignedtxn   MEG /wallet/posttxn
                                     │
                                     ▼
                           [локально, без интернета]
@@ -201,25 +205,21 @@ Seed-фраза → [локально] → Приватный ключ + Адр�
 | 💰 **Кошелёк** | Просмотр баланса, генерация ключей и адресов, QR-код адреса |
 | 📤 **Отправка** | Отправка транзакций с выбором токена, сканирование QR-кода (камера или файл) |
 | 🌐 **Эксплорер** | Встроенный обозреватель блокчейна с навигацией назад/обновить |
-| 🔒 **FutureCash** | Блокировка средств до будущей даты через time-lock скрипты |
-| 📈 **Maximize** | Стейкинг MINIMA на 1–12 месяцев с гарантированным доходом (0.5%–9%) |
+| 🔒 ~~**FutureCash**~~ | *Временно отключено* — time-lock не поддерживается MEG API (код сохранён) |
+| 📈 ~~**Maximize**~~ | *Временно отключено* — стейкинг не поддерживается MEG API (код сохранён) |
 | 🔑 **Seed-фраза** | Безопасное хранение и управление сид-фразой (BIP39) |
-| ⚙️ **Настройки** | Настройка хоста сервера (UID определяется автоматически), язык (автоопределение системного языка) |
+| ⚙️ **Настройки** | Настройка хоста MEG-сервера, язык (автоопределение системного языка) |
 | 🔒 **Биометрия** | Аутентификация по отпечатку пальца при запуске |
 
 ### Работа с API
 
-Приложение **автоматически получает UID** (идентификатор сессии) с сервера при каждом запуске. Вам нужно указать только хост сервера — всё остальное приложение сделает само.
+Приложение работает с сетью через **MEG REST API**. Каждая команда — это `POST` на `https://<host>/wallet/<endpoint>` (например `/wallet/balance`, `/wallet/unsignedtxn`, `/wallet/posttxn`) с телом `application/x-www-form-urlencoded` и HTTP Basic Auth. Резолв UID/сессии больше не нужен.
 
-По умолчанию используется публичный сервер `wallet.minima.global`. **Если поле хоста оставить пустым, будет использоваться этот сервер.**
+По умолчанию используется хост `minimask.org:8888`. **Если поле хоста оставить пустым, будет использоваться этот хост.**
 
-Чтобы использовать собственный сервер:
+Чтобы использовать собственный сервер, введите его MEG-хост в Настройки → Хост сервера (например `your-server.com:8888`).
 
-1. Убедитесь, что на вашем сервере в ноде включены **Public Wallet** и **MegaMMR**
-2. Введите хост вашего сервера в Настройки → Хост сервера (например `your-server.com:9003`)
-3. Приложение автоматически подключится, получит UID и настроит API
-
-> ℹ️ **Как это работает:** Приложение делает GET-запрос на `https://<host>/`, парсит `publicsessionid` из HTML-страницы и формирует полный URL для API. UID обновляется при каждом запуске приложения, поэтому вам не нужно менять его вручную после перезагрузки сервера.
+> ℹ️ **Важно:** Поскольку набор команд MEG не предоставляет операций, необходимых для time-lock (FutureCash) и стейкинга (Maximize), эти две функции сейчас отключены. Используемые endpoint'ы задокументированы в заметках о миграции проекта.
 
 ---
 
@@ -251,7 +251,7 @@ Seed-фраза → [локально] → Приватный ключ + Адр�
 
 ### Безопасность
 
-- **Нода не нужна** — приложение работает через публичный API `wallet.minima.global`
+- **Нода не нужна** — приложение работает через MEG REST API
 - **Ключи на лету** — приватный ключ генерируется из seed-фразы каждый раз заново и нигде не сохраняется
 - **Подписание офлайн** — транзакция подписывается локально на устройстве без передачи ключа в сеть
 - Сид-фраза хранится **только** в зашифрованном хранилище Android Keystore (AES-256-GCM)
